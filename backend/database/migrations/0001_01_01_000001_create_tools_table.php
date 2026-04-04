@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
-            $table->enum('pricing', ['free', 'paid', 'freemium'])->default('freemium');
+            $table->enum('pricing', ['free', 'paid', 'freemium', 'Free trial'])->default('freemium');
             $table->decimal('rating', 3, 2)->default(0.0);
             $table->boolean('featured')->default(false);
             $table->boolean('trending')->default(false);

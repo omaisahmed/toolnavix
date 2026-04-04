@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Models\Tool;
+use App\Models\ToolView;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +19,7 @@ class AdminController extends Controller
         return response()->json([
             'total_tools' => Tool::count(),
             'total_users' => User::count(),
+            'total_views' => ToolView::count(),
             'trending_tools' => Tool::where('trending', true)->take(10)->get(),
             'featured_tools' => Tool::where('featured', true)->take(10)->get(),
             'new_tools' => Tool::orderByDesc('created_at')->take(10)->get(),
@@ -138,6 +140,20 @@ class AdminController extends Controller
     {
         $this->authorize('admin');
 
+        $validated = $request->validate([
+            'logo' => 'sometimes|image|max:4096',
+            'favicon' => 'sometimes|image|max:2048',
+            'footer_text' => 'nullable|string|max:1000',
+            'hero_badge' => 'nullable|string|max:120',
+            'hero_title' => 'nullable|string|max:255',
+            'hero_subtitle' => 'nullable|string|max:1000',
+            'hero_search_placeholder' => 'nullable|string|max:255',
+            'hero_search_button_text' => 'nullable|string|max:80',
+            'hero_tag_1' => 'nullable|string|max:80',
+            'hero_tag_2' => 'nullable|string|max:80',
+            'hero_tag_3' => 'nullable|string|max:80',
+        ]);
+
         $settings = Setting::firstOrNew();
 
         if ($request->hasFile('logo')) {
@@ -154,6 +170,34 @@ class AdminController extends Controller
             }
             $faviconPath = $request->file('favicon')->store('uploads/settings', 'public');
             $settings->favicon_url = $faviconPath;
+        }
+
+        if (array_key_exists('footer_text', $validated)) {
+            $settings->footer_text = $validated['footer_text'] ?: null;
+        }
+        if (array_key_exists('hero_badge', $validated)) {
+            $settings->hero_badge = $validated['hero_badge'] ?: null;
+        }
+        if (array_key_exists('hero_title', $validated)) {
+            $settings->hero_title = $validated['hero_title'] ?: null;
+        }
+        if (array_key_exists('hero_subtitle', $validated)) {
+            $settings->hero_subtitle = $validated['hero_subtitle'] ?: null;
+        }
+        if (array_key_exists('hero_search_placeholder', $validated)) {
+            $settings->hero_search_placeholder = $validated['hero_search_placeholder'] ?: null;
+        }
+        if (array_key_exists('hero_search_button_text', $validated)) {
+            $settings->hero_search_button_text = $validated['hero_search_button_text'] ?: null;
+        }
+        if (array_key_exists('hero_tag_1', $validated)) {
+            $settings->hero_tag_1 = $validated['hero_tag_1'] ?: null;
+        }
+        if (array_key_exists('hero_tag_2', $validated)) {
+            $settings->hero_tag_2 = $validated['hero_tag_2'] ?: null;
+        }
+        if (array_key_exists('hero_tag_3', $validated)) {
+            $settings->hero_tag_3 = $validated['hero_tag_3'] ?: null;
         }
 
         $settings->save();

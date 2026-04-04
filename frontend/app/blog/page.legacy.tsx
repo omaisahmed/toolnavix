@@ -1,0 +1,75 @@
+/* import Link from 'next/link';
+import Header from '../components/Header';
+import { fetchPosts } from '../lib/api';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Blog | ToolNavix',
+  description: 'Read product updates, tutorials, and AI tooling insights.',
+};
+
+type Post = {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  image?: string | null;
+  category?: string | null;
+  published_at?: string | null;
+};
+
+type PaginatedPosts = {
+  data: Post[];
+  current_page: number;
+  last_page: number;
+};
+
+export default async function BlogPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const page = Number(params?.page || '1') > 0 ? String(Number(params?.page || '1')) : '1';
+
+  let payload: PaginatedPosts = { data: [], current_page: 1, last_page: 1 };
+  try {
+    payload = await fetchPosts({ type: 'blog', per_page: '9', page });
+  } catch {
+    payload = { data: [], current_page: 1, last_page: 1 };
+  }
+
+  const posts = payload.data ?? [];
+  const currentPage = payload.current_page ?? 1;
+  const lastPage = payload.last_page ?? 1;
+
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-slate-50 py-10">
+        <div className="container space-y-6">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">ToolNavix Blog</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Insights, tutorials, and product updates</h1>
+            <p className="mt-2 text-sm text-slate-600">Explore practical AI workflows, platform guides, and ecosystem trends.</p>
+          </section>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {posts.map((post) => (
+              <article key={post.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="aspect-[16/9] bg-slate-100">
+                  {post.image ? <img src={post.image} alt={post.title} className="h-full w-full object-cover" /> : null}
+                </div>
+                <div className="p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">{post.category || 'General'}</p>
+                  <Link href={`/blog/${post.slug}`} className="mt-2 block text-xl font-bold leading-tight text-slate-900 hover:text-indigo-600">{post.title}</Link>
+                <p className="mt-2 text-sm text-slate-500">{post.category || 'General'} {post.published_at ? `• ${new Date(post.published_at).toLocaleDateString()}` : ''}</p>
+                <p className="mt-3 text-slate-600">{post.excerpt || 'Read full article for details.'}</p>
+              </article>
+            ))}
+            {posts.length === 0 && <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">No blog posts published yet.</div>}
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
+*/
+export default function LegacyPage() {
+  return null;
+}

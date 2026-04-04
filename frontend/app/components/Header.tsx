@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { Toaster } from 'react-hot-toast';
 
 type Settings = {
   logo_url?: string;
@@ -11,8 +13,28 @@ type Settings = {
 export default function Header() {
   const [settings, setSettings] = useState<Settings>({});
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
+  const currentPath = pathname ?? '';
+
+  const navItems = [
+    { href: '/browse-all', label: 'Browse All' },
+    { href: '/featured-ai-tools', label: 'Featured AI Tools' },
+    { href: '/categories', label: 'Categories' },
+    { href: '/top-ai-tools', label: 'Top AI Tools' },
+    { href: '/free-ai-tools', label: 'Free AI Tools' },
+    { href: '/new-ai-tools', label: 'New AI Tools' },
+    { href: '/compare', label: 'Compare Tools' },
+    { href: '/guides', label: 'Guides' },
+    { href: '/blog', label: 'Blog' },
+    { href: '/ai-news', label: 'AI News' },
+  ];
 
   useEffect(() => {
+    const syncAuth = () => setIsLoggedIn(Boolean(window.localStorage.getItem('toolnavix_token')));
+    syncAuth();
+    window.addEventListener('storage', syncAuth);
+
     const fetchSettings = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/settings`);
@@ -26,9 +48,18 @@ export default function Header() {
     };
 
     fetchSettings();
+
+    return () => {
+      window.removeEventListener('storage', syncAuth);
+    };
   }, []);
 
+  const linkClass = (href: string) =>
+    `text-sm font-medium transition ${currentPath === href || currentPath.startsWith(`${href}/`) ? 'text-indigo-600' : 'text-slate-600 hover:text-slate-900'}`;
+
   return (
+    <>
+    <Toaster position="top-right" />
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
@@ -47,9 +78,17 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/tools" className="text-slate-600 hover:text-slate-900 text-sm font-medium">Tools</Link>
-            <Link href="/compare" className="text-slate-600 hover:text-slate-900 text-sm font-medium">Compare</Link>
+          <nav className="hidden md:flex items-center gap-5">
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+                {item.label}
+              </Link>
+            ))}
+            {isLoggedIn && (
+              <Link href="/my-tools" className={linkClass('/my-tools')}>
+                My Tools
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -66,11 +105,20 @@ export default function Header() {
         {/* Mobile Navigation */}
         {isOpen && (
           <nav className="md:hidden mt-4 space-y-3 pb-4">
-            <Link href="/tools" className="block text-slate-600 hover:text-slate-900 text-sm font-medium">Tools</Link>
-            <Link href="/compare" className="block text-slate-600 hover:text-slate-900 text-sm font-medium">Compare</Link>
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href} className={`block ${linkClass(item.href)}`} onClick={() => setIsOpen(false)}>
+                {item.label}
+              </Link>
+            ))}
+            {isLoggedIn && (
+              <Link href="/my-tools" className={`block ${linkClass('/my-tools')}`} onClick={() => setIsOpen(false)}>
+                My Tools
+              </Link>
+            )}
           </nav>
         )}
       </div>
     </header>
+    </>
   );
 }

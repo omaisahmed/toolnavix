@@ -44,4 +44,43 @@ class BookmarkController extends Controller
 
         return response()->json(['message' => 'Bookmark removed']);
     }
+
+    public function savedTools(Request $request)
+    {
+        $user = $request->user();
+
+        $saved = Bookmark::with('tool.category')
+            ->where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->paginate((int) ($request->per_page ?? 24));
+
+        $saved->getCollection()->transform(function (Bookmark $bookmark) {
+            if ($bookmark->tool && $bookmark->tool->logo && ! (str_starts_with($bookmark->tool->logo, 'http://') || str_starts_with($bookmark->tool->logo, 'https://'))) {
+                $bookmark->tool->logo = url('/storage/'.ltrim($bookmark->tool->logo, '/'));
+            }
+
+            return $bookmark;
+        });
+
+        return response()->json($saved);
+    }
+
+    public function saveTool(Request $request)
+    {
+        return $this->store($request);
+    }
+
+    public function removeSavedTool(Request $request, int $id)
+    {
+        $user = $request->user();
+
+        $bookmark = Bookmark::where('user_id', $user->id)->where('id', $id)->first();
+        if (! $bookmark) {
+            return response()->json(['message' => 'Saved tool not found'], 404);
+        }
+
+        $bookmark->delete();
+
+        return response()->json(['message' => 'Saved tool removed']);
+    }
 }

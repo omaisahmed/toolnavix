@@ -7,7 +7,12 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 async function authFetch(url: string, options: RequestInit = {}) {
-  const headers = new Headers({ 'Content-Type': 'application/json', ...getAuthHeaders() });
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const headers = new Headers({ ...getAuthHeaders() });
+
+  if (!isFormData) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (options.headers) {
     const extraHeaders = new Headers(options.headers as HeadersInit);
@@ -29,15 +34,83 @@ export async function fetchTools(params: Record<string, string> = {}) {
   return response.json();
 }
 
+export async function fetchFeaturedTools(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${API_BASE}/tools/featured?${query}`, { next: { revalidate: 60 } });
+  if (!response.ok) throw new Error('Failed to fetch featured tools');
+  return response.json();
+}
+
+export async function fetchTopTools(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${API_BASE}/tools/top?${query}`, { next: { revalidate: 60 } });
+  if (!response.ok) throw new Error('Failed to fetch top tools');
+  return response.json();
+}
+
+export async function fetchFreeTools(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${API_BASE}/tools/free?${query}`, { next: { revalidate: 60 } });
+  if (!response.ok) throw new Error('Failed to fetch free tools');
+  return response.json();
+}
+
+export async function fetchNewTools(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${API_BASE}/tools/new?${query}`, { next: { revalidate: 60 } });
+  if (!response.ok) throw new Error('Failed to fetch new tools');
+  return response.json();
+}
+
 export async function fetchTool(slug: string) {
   const response = await fetch(`${API_BASE}/tools/${slug}`, { next: { revalidate: 60 } });
   if (!response.ok) throw new Error('Tool not found');
   return response.json();
 }
 
+export async function trackToolView(slug: string) {
+  const response = await fetch(`${API_BASE}/tools/${slug}/view`, {
+    method: 'POST',
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error('Failed to track tool view');
+  return response.json();
+}
+
 export async function fetchCategories() {
   const response = await fetch(`${API_BASE}/categories`, { next: { revalidate: 3600 } });
   if (!response.ok) throw new Error('Failed to fetch categories');
+  return response.json();
+}
+
+export async function fetchCategoryTools(slug: string, params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${API_BASE}/categories/${slug}/tools?${query}`, { next: { revalidate: 120 } });
+  if (!response.ok) throw new Error('Failed to fetch category tools');
+  return response.json();
+}
+
+export async function fetchPublicSettings() {
+  const response = await fetch(`${API_BASE}/settings`, { next: { revalidate: 300 } });
+  if (!response.ok) throw new Error('Failed to fetch public settings');
+  return response.json();
+}
+
+export async function fetchPosts(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${API_BASE}/posts?${query}`, { next: { revalidate: 120 } });
+  if (!response.ok) throw new Error('Failed to fetch posts');
+  return response.json();
+}
+
+export async function fetchDashboardPosts(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  return authFetch(`${API_BASE}/dashboard/posts?${query}`, { method: 'GET' });
+}
+
+export async function fetchPost(slug: string) {
+  const response = await fetch(`${API_BASE}/posts/${slug}`, { next: { revalidate: 120 } });
+  if (!response.ok) throw new Error('Post not found');
   return response.json();
 }
 
@@ -109,11 +182,22 @@ export async function deleteReview(reviewId: number) {
   return authFetch(`${API_BASE}/dashboard/reviews/${reviewId}`, { method: 'DELETE' });
 }
 
-export async function createTool(payload: Record<string, unknown>) {
+export async function createTool(payload: Record<string, unknown> | FormData) {
+  if (payload instanceof FormData) {
+    return authFetch(`${API_BASE}/tools`, { method: 'POST', body: payload });
+  }
+
   return authFetch(`${API_BASE}/tools`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export async function updateTool(toolId: number, payload: Record<string, unknown>) {
+export async function updateTool(toolId: number, payload: Record<string, unknown> | FormData) {
+  if (payload instanceof FormData) {
+    if (!payload.has('_method')) {
+      payload.append('_method', 'PUT');
+    }
+    return authFetch(`${API_BASE}/tools/${toolId}`, { method: 'POST', body: payload });
+  }
+
   return authFetch(`${API_BASE}/tools/${toolId}`, { method: 'PUT', body: JSON.stringify(payload) });
 }
 
@@ -131,4 +215,39 @@ export async function updateCategory(categoryId: number, payload: Record<string,
 
 export async function deleteCategory(categoryId: number) {
   return authFetch(`${API_BASE}/categories/${categoryId}`, { method: 'DELETE' });
+}
+
+export async function fetchSavedTools(page = 1) {
+  return authFetch(`${API_BASE}/saved-tools?page=${page}`);
+}
+
+export async function saveTool(toolId: number) {
+  return authFetch(`${API_BASE}/saved-tools`, { method: 'POST', body: JSON.stringify({ tool_id: toolId }) });
+}
+
+export async function removeSavedTool(savedId: number) {
+  return authFetch(`${API_BASE}/saved-tools/${savedId}`, { method: 'DELETE' });
+}
+
+export async function createPost(payload: Record<string, unknown> | FormData) {
+  if (payload instanceof FormData) {
+    return authFetch(`${API_BASE}/posts`, { method: 'POST', body: payload });
+  }
+
+  return authFetch(`${API_BASE}/posts`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updatePost(postId: number, payload: Record<string, unknown> | FormData) {
+  if (payload instanceof FormData) {
+    if (!payload.has('_method')) {
+      payload.append('_method', 'PUT');
+    }
+    return authFetch(`${API_BASE}/posts/${postId}`, { method: 'POST', body: payload });
+  }
+
+  return authFetch(`${API_BASE}/posts/${postId}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function deletePost(postId: number) {
+  return authFetch(`${API_BASE}/posts/${postId}`, { method: 'DELETE' });
 }

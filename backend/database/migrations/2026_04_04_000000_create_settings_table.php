@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('logo_url')->nullable();
             $table->string('favicon_url')->nullable();
+            $table->text('footer_text')->nullable();
             $table->timestamps();
         });
 
