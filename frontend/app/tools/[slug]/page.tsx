@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fetchTool } from '../../lib/api';
+import { fetchCategoryTools, fetchTool } from '../../lib/api';
 import Header from '../../components/Header';
 import TrackToolView from './TrackToolView';
 import { sanitizeRichHtml } from '../../lib/richText';
@@ -13,6 +13,7 @@ type ToolType = {
   description: string;
   pricing: string;
   rating: number;
+  logo?: string | null;
   category: { name: string; slug: string };
   features: string[];
   pros: string[];
@@ -59,6 +60,15 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
   const cons = normalizeList((tool as any).cons);
   const descriptionHtml = sanitizeRichHtml(tool.description);
 
+  let relatedTools: ToolType[] = [];
+  try {
+    const relatedResponse = await fetchCategoryTools(tool.category.slug, { per_page: '4' });
+    const relatedData = Array.isArray(relatedResponse) ? relatedResponse : (relatedResponse.data ?? []);
+    relatedTools = relatedData.filter((item: ToolType) => item.slug !== tool.slug).slice(0, 3);
+  } catch {
+    relatedTools = [];
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <TrackToolView slug={slug} />
@@ -83,7 +93,7 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
           </div>
 
           <div
-            className="mt-4 text-slate-700 [&_a]:text-indigo-600 [&_a]:underline [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6"
+            className="mt-4 max-w-none break-words text-slate-700 [&_p]:mb-4 [&_p]:leading-7 [&_a]:break-all [&_a]:text-indigo-600 [&_a]:underline [&_code]:break-words [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_*]:max-w-full"
             dangerouslySetInnerHTML={{ __html: descriptionHtml || '<p>No description available.</p>' }}
           />
 
@@ -129,6 +139,45 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
         <section className="card">
           <h2 className="font-semibold text-slate-900">Related tools</h2>
           <p className="mt-2 text-sm text-slate-600">Based on category and rating, more tools to explore.</p>
+
+          {relatedTools.length > 0 ? (
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {relatedTools.map((relatedTool) => (
+                <article key={relatedTool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="aspect-[16/9] bg-slate-100">
+                    {relatedTool.logo ? (
+                      <img src={relatedTool.logo} alt={relatedTool.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-500">
+                        No image
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <Link href={`/tools/${relatedTool.slug}`} className="line-clamp-2 text-lg font-semibold text-slate-900 hover:text-indigo-600">
+                      {relatedTool.name}
+                    </Link>
+                    <p className="mt-2 text-sm font-medium text-indigo-700">{relatedTool.pricing}</p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-xs text-slate-500">{relatedTool.rating} / 5</span>
+                      <a
+                        href={relatedTool.visit_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-medium text-indigo-600 hover:underline"
+                      >
+                        Visit site
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              No related tools found in this category yet.
+            </div>
+          )}
         </section>
       </div>
     </div>

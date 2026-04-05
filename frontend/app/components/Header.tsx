@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 
 type Settings = {
@@ -11,9 +11,11 @@ type Settings = {
 };
 
 export default function Header() {
+  const router = useRouter();
   const [settings, setSettings] = useState<Settings>({});
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const pathname = usePathname();
   const currentPath = pathname ?? '';
 
@@ -57,6 +59,13 @@ export default function Header() {
   const linkClass = (href: string) =>
     `text-sm font-medium transition ${currentPath === href || currentPath.startsWith(`${href}/`) ? 'text-indigo-600' : 'text-slate-600 hover:text-slate-900'}`;
 
+  const handleLogout = () => {
+    window.localStorage.removeItem('toolnavix_token');
+    setIsLoggedIn(false);
+    setShowProfileMenu(false);
+    router.push('/login');
+  };
+
   return (
     <>
     <Toaster position="top-right" />
@@ -78,28 +87,87 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-5">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className={linkClass(item.href)}>
-                {item.label}
-              </Link>
-            ))}
-            {isLoggedIn && (
+          <div className="hidden md:flex items-center gap-5">
+            <nav className="flex items-center gap-5">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+                  {item.label}
+                </Link>
+              ))}
               <Link href="/my-tools" className={linkClass('/my-tools')}>
                 My Tools
               </Link>
-            )}
-          </nav>
+            </nav>
+
+            <div
+              className="relative"
+              onMouseEnter={() => isLoggedIn && setShowProfileMenu(true)}
+              onMouseLeave={() => setShowProfileMenu(false)}
+            >
+              {isLoggedIn ? (
+                <>
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:border-indigo-300 hover:text-indigo-600 ${currentPath === '/my-tools' ? 'text-indigo-600' : 'text-slate-600'}`}
+                    aria-label="Open profile menu"
+                    title="Profile menu"
+                  >
+                    <i className="bi bi-person-circle text-xl" aria-hidden="true" />
+                  </button>
+
+                  {showProfileMenu && (
+                    <div className="absolute right-0 top-full z-50 pt-2">
+                      <div className="min-w-[160px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                        <Link
+                          href="/my-tools"
+                          className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-indigo-600"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          My Tools
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-rose-600"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:border-indigo-300 hover:text-indigo-600 ${currentPath === '/login' ? 'text-indigo-600' : 'text-slate-600'}`}
+                  aria-label="Go to login"
+                  title="Login"
+                >
+                  <i className="bi bi-person-circle text-xl" aria-hidden="true" />
+                </Link>
+              )}
+            </div>
+          </div>
 
           {/* Mobile Menu Button */}
-          <button
+          <div className="flex items-center gap-2 md:hidden">
+            <Link
+              href={isLoggedIn ? '/my-tools' : '/login'}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              aria-label={isLoggedIn ? 'Open saved tools' : 'Go to login'}
+              title={isLoggedIn ? 'Saved tools' : 'Login'}
+            >
+              <i className="bi bi-person-circle text-xl" aria-hidden="true" />
+            </Link>
+            <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-slate-600 hover:text-slate-900"
+            className="p-2 text-slate-600 hover:text-slate-900"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
             </svg>
           </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -110,9 +178,27 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-            {isLoggedIn && (
-              <Link href="/my-tools" className={`block ${linkClass('/my-tools')}`} onClick={() => setIsOpen(false)}>
-                My Tools
+            <Link href="/my-tools" className={`block ${linkClass('/my-tools')}`} onClick={() => setIsOpen(false)}>
+              My Tools
+            </Link>
+            {isLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false);
+                }}
+                className="block text-sm font-medium text-slate-600 hover:text-rose-600"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className={`block ${linkClass('/login')}`}
+                onClick={() => setIsOpen(false)}
+              >
+                Login
               </Link>
             )}
           </nav>

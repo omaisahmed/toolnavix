@@ -53,6 +53,7 @@ function ToolCard({ tool, badge }: { tool: HomepageTool; badge: string }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
+        <SaveToolButton toolId={tool.id} variant="overlay" />
         {tool.logo ? (
           <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
         ) : (
@@ -94,10 +95,6 @@ function ToolCard({ tool, badge }: { tool: HomepageTool; badge: string }) {
             <p className="text-sm font-semibold text-indigo-700">{tool.pricing}</p>
           </div>
         </div>
-        <div className="mt-3 flex justify-end">
-          <SaveToolButton toolId={tool.id} />
-        </div>
-
         {/* <Link href={`/tools/${tool.slug}`} className="mt-4 inline-block text-sm font-semibold text-indigo-600 hover:underline">
           View details
         </Link> */}
@@ -163,7 +160,7 @@ export default function Home() {
     async function loadHomepageData() {
       try {
         const [toolsData, categoriesData, settingsData] = await Promise.all([
-          fetchTools({ per_page: '12' }),
+          fetchTools({ per_page: '50' }),
           fetchCategories(),
           fetchPublicSettings().catch(() => ({})),
         ]);
@@ -234,7 +231,7 @@ export default function Home() {
             browseHref="/tools?filter=just_landed"
             browseLabel="Explore all"
             badge="Just Landed"
-            tools={tools.filter((tool) => tool.just_landed)}
+            tools={tools.filter((tool) => tool.just_landed).slice(0, 8)}
           />
 
           <ToolSection
@@ -242,7 +239,7 @@ export default function Home() {
             browseHref="/tools?filter=trending"
             browseLabel="See all"
             badge="Trending"
-            tools={tools.filter((tool) => tool.trending)}
+            tools={tools.filter((tool) => tool.trending).slice(0, 8)}
           />
 
           <ToolSection
@@ -250,7 +247,7 @@ export default function Home() {
             browseHref="/tools?filter=featured"
             browseLabel="Browse all"
             badge="Featured"
-            tools={tools.filter((tool) => tool.featured)}
+            tools={tools.filter((tool) => tool.featured).slice(0, 8)}
           />
         </>
       )}
@@ -258,7 +255,7 @@ export default function Home() {
       <section className="container pb-12">
         <h2 className="mb-5 text-2xl font-bold text-slate-900">Explore Top AI Categories</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => (
+          {categories.slice(0, 8).map((category) => (
             <Link
               key={category.slug}
               href={`/tools?category=${category.slug}`}

@@ -65,18 +65,26 @@ export default function ToolFeedPage({ title, subtitle, fetcher }: ToolFeedPageP
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tools.map((tool) => (
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <div className="aspect-[16/9] bg-slate-100">
-                    {tool.logo ? <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" /> : null}
+                  <div className="relative aspect-[16/9] bg-slate-100">
+                    <SaveToolButton toolId={tool.id} variant="overlay" />
+                    {tool.logo ? (
+                      <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-500">
+                        No image
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
-                    <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-xl font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
-                    <p className="mt-2 line-clamp-3 text-sm text-slate-600">{toShortDescription(tool.description)}</p>
+                    <Link href={`/tools/${tool.slug}`} className="line-clamp-2 break-words text-xl font-bold text-slate-900 hover:text-indigo-600">
+                      {tool.name}
+                    </Link>
+                    <p className="mt-2 min-h-[60px] break-words text-sm leading-6 text-slate-600">
+                      {toShortDescription(tool.description)}
+                    </p>
                     <div className="mt-3 flex items-center justify-between text-sm">
                       <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-700">{tool.category?.name || 'Uncategorized'}</span>
                       <span className="font-semibold text-indigo-700">{tool.pricing}</span>
-                    </div>
-                    <div className="mt-3 flex justify-end">
-                      <SaveToolButton toolId={tool.id} />
                     </div>
                   </div>
                 </article>
