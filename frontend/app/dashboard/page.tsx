@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import RichTextEditor from '../components/RichTextEditor';
+import FilterBar from '../components/FilterBar';
 import { stripHtml } from '../lib/richText';
 import {
   createCategory,
@@ -29,7 +31,7 @@ import {
   updateSettings,
 } from '../lib/api';
 
-const tabs = ['Overview', 'Tools', 'Categories', 'Content', 'Users', 'Reviews', 'Settings'] as const;
+const tabs = ['Overview', 'Tools', 'Categories', 'Content', 'Users', 'Settings'] as const;
 type Tab = (typeof tabs)[number];
 
 type Stats = {
@@ -498,13 +500,39 @@ const handleLogout = () => {
 };
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+      <DashboardPageContent />
+    </Suspense>
+  );
+}
+
+function DashboardPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('Overview');
   const [stats, setStats] = useState<Stats | null>(null);
+
+  // Read tab from URL query params
+  useEffect(() => {
+    const tabParam = searchParams?.get('tab');
+    if (tabParam && tabs.includes(tabParam as Tab)) {
+      setActiveTab(tabParam as Tab);
+    }
+  }, [searchParams]);
   const [tools, setTools] = useState<Tool[]>([]);
+  const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
+  const [toolFilters, setToolFilters] = useState({ search: '', pricing: '', featured: false, trending: false, just_landed: false });
   const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [categoryFilters, setCategoryFilters] = useState({ search: '' });
   const [users, setUsers] = useState<User[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [userFilters, setUserFilters] = useState({ search: '', admin: '' });
   const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  const [postFilters, setPostFilters] = useState({ search: '', type: '', published: '' });
+  const [reviews, setReviews] = useState<any[]>([]);
   const [toolForm, setToolForm] = useState(defaultToolForm);
   const [categoryForm, setCategoryForm] = useState(defaultCategoryForm);
   const [userForm, setUserForm] = useState(defaultUserForm);
@@ -564,6 +592,65 @@ export default function DashboardPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Filter effects
+  useEffect(() => {
+    const filtered = tools.filter((tool) => {
+      if (toolFilters.search && !tool.name.toLowerCase().includes(toolFilters.search.toLowerCase())) return false;
+      if (toolFilters.pricing && tool.pricing !== toolFilters.pricing) return false;
+      if (toolFilters.featured && !tool.featured) return false;
+      if (toolFilters.trending && !tool.trending) return false;
+      if (toolFilters.just_landed && !tool.just_landed) return false;
+      return true;
+    });
+    setFilteredTools(filtered);
+  }, [tools, toolFilters]);
+
+  useEffect(() => {
+    const filtered = categories.filter((cat) => {
+      if (categoryFilters.search && !cat.name.toLowerCase().includes(categoryFilters.search.toLowerCase())) return false;
+      return true;
+    });
+    setFilteredCategories(filtered);
+  }, [categories, categoryFilters]);
+
+  useEffect(() => {
+    const filtered = users.filter((user) => {
+      if (userFilters.search && !user.name.toLowerCase().includes(userFilters.search.toLowerCase()) && !user.email.toLowerCase().includes(userFilters.search.toLowerCase())) return false;
+      if (userFilters.admin === 'true' && !user.is_admin) return false;
+      if (userFilters.admin === 'false' && user.is_admin) return false;
+      return true;
+    });
+    setFilteredUsers(filtered);
+  }, [users, userFilters]);
+
+  useEffect(() => {
+    const filtered = posts.filter((post) => {
+      if (postFilters.search && !post.title.toLowerCase().includes(postFilters.search.toLowerCase())) return false;
+      if (postFilters.type && post.type !== postFilters.type) return false;
+      if (postFilters.published === 'true' && !post.published) return false;
+      if (postFilters.published === 'false' && post.published) return false;
+      return true;
+    });
+    setFilteredPosts(filtered);
+  }, [posts, postFilters]);
+
+  // Filter handlers
+  const handleToolFiltersChange = (filters: Record<string, string | boolean>) => {
+    setToolFilters(filters as typeof toolFilters);
+  };
+
+  const handleCategoryFiltersChange = (filters: Record<string, string | boolean>) => {
+    setCategoryFilters(filters as typeof categoryFilters);
+  };
+
+  const handleUserFiltersChange = (filters: Record<string, string | boolean>) => {
+    setUserFilters(filters as typeof userFilters);
+  };
+
+  const handlePostFiltersChange = (filters: Record<string, string | boolean>) => {
+    setPostFilters(filters as typeof postFilters);
+  };
 
   const clearToolForm = () => {
     setSelectedTool(null);
@@ -649,7 +736,7 @@ export default function DashboardPage() {
         setLoading(true);
         try {
           await banUser(userId);
-          toast.success('User banned successfully.');
+          toast.success('User deleted successfully.');
           await loadData();
         } catch (err: any) {
           setError(err.message || 'Unable to delete user.');
@@ -972,7 +1059,33 @@ export default function DashboardPage() {
         setSuccess('');
         setLoading(true);
         try {
+          // Get the post to extract image URLs
+          const postToDelete = posts.find((p) => p.id === postId);
+          
+          // Extract image URLs from post content and featured image
+          const imagesToDelete: string[] = [];
+          
+          // Add featured/header image
+          if (postToDelete?.image && !postToDelete.image.startsWith('data:')) {
+            imagesToDelete.push(postToDelete.image);
+          }
+          
+          // Extract external images from content (exclude base64 images)
+          if (postToDelete?.content) {
+            const imgRegex = /src=["']([^"']+)["']/gi;
+            let match;
+            while ((match = imgRegex.exec(postToDelete.content)) !== null) {
+              const imgUrl = match[1];
+              // Only include non-base64 image URLs
+              if (imgUrl && !imgUrl.startsWith('data:')) {
+                imagesToDelete.push(imgUrl);
+              }
+            }
+          }
+          
+          // Delete post (backend should handle image deletion)
           await deletePost(postId);
+          
           toast.success('Post deleted successfully.');
           await loadData();
           if (selectedPost?.id === postId) {
@@ -1022,7 +1135,15 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#4f46e5',
+            color: '#ffffff',
+          },
+        }}
+      />
       <Modal
         isOpen={modal.isOpen}
         title={modal.title}
@@ -1050,7 +1171,7 @@ export default function DashboardPage() {
             {tabs.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => router.push(`/dashboard?tab=${tab}`)}
                 className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                   activeTab === tab
                     ? 'bg-indigo-600 text-white'
@@ -1157,22 +1278,6 @@ export default function DashboardPage() {
                       View
                     </button>
                   </article>
-
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Pending Reviews</p>
-                      <span className="rounded-xl bg-rose-100 p-2 text-rose-600">
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H8l-4 4v10a2 2 0 002 2z" />
-                        </svg>
-                      </span>
-                    </div>
-                    <p className="mt-3 text-4xl font-bold text-slate-900">{reviews.filter((review) => !review.approved).length}</p>
-                    <p className="mt-1 text-xs text-slate-500">{reviews.length} total reviews</p>
-                    <button onClick={() => setActiveTab('Reviews')} className="mt-4 text-sm font-semibold text-indigo-600 hover:underline">
-                      View
-                    </button>
-                  </article>
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
@@ -1228,36 +1333,20 @@ export default function DashboardPage() {
 
             {activeTab === 'Tools' && (
               <section className="space-y-4">
-                <div className="card">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">Tools</h2>
-                    <button
-                      onClick={() => openCreateModal('tool')}
-                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create Tool
-                    </button>
-                  </div>
-                  <p className="text-sm text-slate-500 mt-1">{tools.length} records</p>
-                </div>
-                {formModal.isOpen && formModal.type === 'tool' && (
-                  <FormModal
-                    isOpen={true}
-                    type="tool"
-                    mode={formModal.mode}
-                    data={formModal.data}
-                    onClose={closeFormModal}
-                    onSubmit={handleFormSubmit}
-                    formData={toolForm}
-                    setFormData={setToolForm}
-                    loading={loading}
-                    toolImageFile={toolImageFile}
-                    setToolImageFile={setToolImageFile}
-                  />
-                )}
+                <FilterBar
+                  filters={toolFilters}
+                  onFilterChange={handleToolFiltersChange}
+                  config={{
+                    fields: [
+                      { key: 'search', label: 'Search', type: 'text', placeholder: 'Tool name' },
+                      { key: 'pricing', label: 'Pricing', type: 'select', options: [{ value: 'free', label: 'Free' }, { value: 'paid', label: 'Paid' }, { value: 'freemium', label: 'Freemium' }, { value: 'free_trial', label: 'Free Trial' }] },
+                      { key: 'featured', label: 'Featured Only', type: 'checkbox' },
+                      { key: 'trending', label: 'Trending Only', type: 'checkbox' },
+                    ],
+                  }}
+                  onAddNew={() => router.push('/dashboard/tools')}
+                  addNewLabel="Create Tools"
+                />
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-600">
@@ -1270,7 +1359,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {tools.map((tool) => (
+                      {filteredTools.map((tool) => (
                         <tr key={tool.id} className="border-t border-slate-200">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
@@ -1278,9 +1367,7 @@ export default function DashboardPage() {
                                 {tool.logo ? (
                                   <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
                                 ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-500">
-                                    No image
-                                  </div>
+                                  <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
                                 )}
                               </div>
                               <span>{tool.name}</span>
@@ -1290,7 +1377,7 @@ export default function DashboardPage() {
                           <td className="px-4 py-3">{formatPricing(tool.pricing)}</td>
                           <td className="px-4 py-3">{statusText(tool)}</td>
                           <td className="px-4 py-3 space-x-2">
-                            <button onClick={() => openEditModal('tool', tool)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
+                            <button onClick={() => router.push(`/dashboard/tools?id=${tool.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
                             <button onClick={() => handleDeleteTool(tool.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200">Delete</button>
                           </td>
                         </tr>
@@ -1303,38 +1390,19 @@ export default function DashboardPage() {
 
             {activeTab === 'Categories' && (
               <section className="space-y-4">
-                <div className="card">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
-                    <button
-                      onClick={() => openCreateModal('category')}
-                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create Category
-                    </button>
-                  </div>
-                  <p className="text-sm text-slate-500 mt-1">{categories.length} categories</p>
-                </div>
-                {formModal.isOpen && formModal.type === 'category' && (
-                  <FormModal
-                    isOpen={true}
-                    type="category"
-                    mode={formModal.mode}
-                    data={formModal.data}
-                    onClose={closeFormModal}
-                    onSubmit={handleFormSubmit}
-                    formData={categoryForm}
-                    setFormData={setCategoryForm}
-                    loading={loading}
-                    toolImageFile={toolImageFile}
-                    setToolImageFile={setToolImageFile}
-                  />
-                )}
+                <FilterBar
+                  filters={categoryFilters}
+                  onFilterChange={handleCategoryFiltersChange}
+                  config={{
+                    fields: [
+                      { key: 'search', label: 'Search', type: 'text', placeholder: 'Category name' },
+                    ],
+                  }}
+                  onAddNew={() => router.push('/dashboard/categories')}
+                  addNewLabel="Create Category"
+                />
                 <div className="space-y-3">
-                  {categories.map((category) => (
+                  {filteredCategories.map((category) => (
                     <div key={category.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -1347,7 +1415,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => openEditModal('category', category)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
+                          <button onClick={() => router.push(`/dashboard/categories?id=${category.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
                           <button onClick={() => handleDeleteCategory(category.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200">Delete</button>
                         </div>
                       </div>
@@ -1362,15 +1430,6 @@ export default function DashboardPage() {
                 <div className="card">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-slate-900">Content Management</h2>
-                    <button
-                      onClick={openCreatePostForm}
-                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      New Post
-                    </button>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
                     Manage Blog, AI News, and Guides from one place.
@@ -1391,211 +1450,19 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h3 className="text-base font-semibold text-slate-900">{selectedPost ? 'Edit Content' : 'Create Content'}</h3>
-                  <form onSubmit={handlePostSubmit} className="mt-4 space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Title</label>
-                        <input
-                          value={postForm.title}
-                          onChange={(e) => setPostForm({ ...postForm, title: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Slug</label>
-                        <input
-                          value={postForm.slug}
-                          onChange={(e) => setPostForm({ ...postForm, slug: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                          placeholder="Leave empty to auto-generate"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Type</label>
-                        <select
-                          value={postForm.type}
-                          onChange={(e) => setPostForm({ ...postForm, type: e.target.value as 'blog' | 'news' | 'guide' })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                        >
-                          <option value="blog">Blog</option>
-                          <option value="news">AI News</option>
-                          <option value="guide">Guide</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Category</label>
-                        <div className="relative mt-2">
-                          <input
-                            value={postForm.category}
-                            onChange={(e) => {
-                              setPostForm({ ...postForm, category: e.target.value });
-                              setIsPostCategoryOpen(true);
-                            }}
-                            onFocus={() => setIsPostCategoryOpen(true)}
-                            onBlur={() => setTimeout(() => setIsPostCategoryOpen(false), 120)}
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            placeholder="Search or type category"
-                          />
-                          {isPostCategoryOpen && (
-                            <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                              {filteredPostCategories.slice(0, 12).map((category) => (
-                                <button
-                                  key={category.id}
-                                  type="button"
-                                  onMouseDown={(event) => event.preventDefault()}
-                                  onClick={() => {
-                                    setPostForm({ ...postForm, category: category.name });
-                                    setIsPostCategoryOpen(false);
-                                  }}
-                                  className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  {category.name}
-                                </button>
-                              ))}
-                              {filteredPostCategories.length === 0 && (
-                                <p className="px-3 py-2 text-xs text-slate-500">No matching categories</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Publish Date</label>
-                        <input
-                          type="datetime-local"
-                          value={postForm.published_at}
-                          onChange={(e) => setPostForm({ ...postForm, published_at: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Tags (comma separated)</label>
-                      <input
-                        value={postForm.tags}
-                        onChange={(e) => setPostForm({ ...postForm, tags: e.target.value })}
-                        className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                        placeholder="ai, productivity, writing"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Excerpt</label>
-                      <textarea
-                        value={postForm.excerpt}
-                        onChange={(e) => setPostForm({ ...postForm, excerpt: e.target.value })}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Post Image</label>
-                      <div className="mt-2 flex items-center gap-4">
-                        {postForm.image && !postImageFile && (
-                          <div className="h-16 w-28 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                            <img src={postForm.image} alt="Post preview" className="h-full w-full object-cover" />
-                          </div>
-                        )}
-                        {postImageFile && (
-                          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            {postImageFile.name}
-                          </div>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            setPostImageFile(file);
-                            if (file) {
-                              setPostForm({ ...postForm, remove_image: false });
-                            }
-                          }}
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
-                        />
-                      </div>
-                      {postForm.image && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPostForm({ ...postForm, image: '', remove_image: true });
-                            setPostImageFile(null);
-                          }}
-                          className="mt-2 text-sm text-rose-600 hover:underline"
-                        >
-                          Remove current image
-                        </button>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Content</label>
-                      <div className="mt-2">
-                        <RichTextEditor
-                          value={postForm.content}
-                          onChange={(nextValue) => setPostForm({ ...postForm, content: nextValue })}
-                          minHeightClassName="min-h-[220px]"
-                          placeholder="Write post content..."
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Meta Title</label>
-                        <input
-                          value={postForm.meta_title}
-                          onChange={(e) => setPostForm({ ...postForm, meta_title: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Meta Description</label>
-                        <input
-                          value={postForm.meta_description}
-                          onChange={(e) => setPostForm({ ...postForm, meta_description: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
-                        />
-                      </div>
-                    </div>
-
-                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={postForm.published}
-                        onChange={(e) => setPostForm({ ...postForm, published: e.target.checked })}
-                      />
-                      Published
-                    </label>
-
-                    <div className="flex flex-wrap justify-end gap-3">
-                      {selectedPost && (
-                        <button
-                          type="button"
-                          onClick={clearPostForm}
-                          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          Cancel Edit
-                        </button>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {selectedPost ? 'Update Post' : 'Create Post'}
-                      </button>
-                    </div>
-                  </form>
-                </section>
+                <FilterBar
+                  filters={postFilters}
+                  onFilterChange={handlePostFiltersChange}
+                  config={{
+                    fields: [
+                      { key: 'search', label: 'Search', type: 'text', placeholder: 'Post title' },
+                      { key: 'type', label: 'Type', type: 'select', options: [{ value: 'blog', label: 'Blog' }, { value: 'news', label: 'AI News' }] },
+                      { key: 'published', label: 'Published', type: 'select', options: [{ value: 'true', label: 'Published' }, { value: 'false', label: 'Draft' }] },
+                    ],
+                  }}
+                  onAddNew={() => router.push('/dashboard/content')}
+                  addNewLabel="New Post"
+                />
 
                 <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <table className="w-full text-left text-sm">
@@ -1609,7 +1476,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {posts.map((post) => (
+                      {filteredPosts.map((post) => (
                         <tr key={post.id} className="border-t border-slate-200">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
@@ -1617,9 +1484,7 @@ export default function DashboardPage() {
                                 {post.image ? (
                                   <img src={post.image} alt={post.title} className="h-full w-full object-cover" />
                                 ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-500">
-                                    No image
-                                  </div>
+                                  <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
                                 )}
                               </div>
                               <div>
@@ -1632,12 +1497,12 @@ export default function DashboardPage() {
                           <td className="px-4 py-3">{post.category || 'General'}</td>
                           <td className="px-4 py-3">{post.published ? 'Published' : 'Draft'}</td>
                           <td className="px-4 py-3 space-x-2">
-                            <button onClick={() => openEditPostForm(post)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
+                            <button onClick={() => router.push(`/dashboard/content?id=${post.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
                             <button onClick={() => handleDeletePost(post.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200">Delete</button>
                           </td>
                         </tr>
                       ))}
-                      {posts.length === 0 && (
+                      {filteredPosts.length === 0 && (
                         <tr>
                           <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No content found.</td>
                         </tr>
@@ -1649,38 +1514,21 @@ export default function DashboardPage() {
             )}
 
             {activeTab === 'Users' && (
-              <section className="card">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-slate-900">Users</h2>
-                  <button
-                    onClick={() => openCreateModal('user')}
-                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Create User
-                  </button>
-                </div>
-                {formModal.isOpen && formModal.type === 'user' && (
-                  <div className="mt-4">
-                    <FormModal
-                      isOpen={true}
-                      type="user"
-                      mode={formModal.mode}
-                      data={formModal.data}
-                      onClose={closeFormModal}
-                      onSubmit={handleFormSubmit}
-                      formData={userForm}
-                      setFormData={setUserForm}
-                      loading={loading}
-                      toolImageFile={toolImageFile}
-                      setToolImageFile={setToolImageFile}
-                    />
-                  </div>
-                )}
-                <span className="text-sm text-slate-500 mt-1">{users.length} users</span>
-                <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <section className="space-y-5">
+                <FilterBar
+                  filters={userFilters}
+                  onFilterChange={handleUserFiltersChange}
+                  config={{
+                    fields: [
+                      { key: 'search', label: 'Search', type: 'text', placeholder: 'Name or email' },
+                      { key: 'admin', label: 'Role', type: 'select', options: [{ value: 'true', label: 'Admin' }, { value: 'false', label: 'Member' }] },
+                    ],
+                  }}
+                  onAddNew={() => router.push('/dashboard/users')}
+                  addNewLabel="New User"
+                />
+
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-600">
                       <tr>
@@ -1692,14 +1540,14 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map((user) => (
+                      {filteredUsers.map((user) => (
                         <tr key={user.id} className="border-t border-slate-200">
                           <td className="px-4 py-3">{user.name}</td>
                           <td className="px-4 py-3">{user.email}</td>
                           <td className="px-4 py-3">{user.is_admin ? 'Admin' : 'Member'}</td>
                           <td className="px-4 py-3">{user.banned ? 'Banned' : 'Active'}</td>
                           <td className="px-4 py-3 space-x-2">
-                            <button onClick={() => openEditModal('user', user)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
+                            <button onClick={() => router.push(`/dashboard/users?id=${user.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
                             {!user.is_admin && (
                               <button disabled={user.banned} onClick={() => handleBanUser(user.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200 disabled:opacity-50 disabled:cursor-not-allowed">
                                 Delete
@@ -1708,39 +1556,13 @@ export default function DashboardPage() {
                           </td>
                         </tr>
                       ))}
+                      {filteredUsers.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No users found.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
-                </div>
-              </section>
-            )}
-
-            {activeTab === 'Reviews' && (
-              <section className="card">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
-                  <span className="text-sm text-slate-500">{reviews.length} reviews</span>
-                </div>
-                <div className="mt-4 space-y-4">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-900">{review.user.name} — {review.tool.name}</p>
-                          <p className="text-sm text-slate-500">{new Date(review.created_at).toLocaleString()}</p>
-                        </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${review.approved ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {review.approved ? 'Approved' : 'Pending'}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm text-slate-700">{review.comment}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {!review.approved && (
-                          <button onClick={() => handleApproveReview(review.id)} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Approve</button>
-                        )}
-                        <button onClick={() => handleDeleteReview(review.id)} className="rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-200">Delete</button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </section>
             )}

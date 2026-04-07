@@ -33,16 +33,26 @@ export default function ToolFeedPage({ title, subtitle, fetcher }: ToolFeedPageP
   const [tools, setTools] = useState<Tool[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [showLoadingState, setShowLoadingState] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    // Only show loading state after 300ms to avoid flashing on initial load
+    const loadingTimer = setTimeout(() => setShowLoadingState(true), 300);
+    
     fetcher({ page: String(page), per_page: '12' })
       .then((res) => {
         setTools(res.data ?? []);
         setLastPage(res.last_page ?? 1);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setShowLoadingState(false);
+        clearTimeout(loadingTimer);
+      });
+      
+    return () => clearTimeout(loadingTimer);
   }, [fetcher, page]);
 
   return (
@@ -55,7 +65,7 @@ export default function ToolFeedPage({ title, subtitle, fetcher }: ToolFeedPageP
             <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
           </section>
 
-          {loading ? (
+          {showLoadingState ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-72 animate-pulse rounded-2xl bg-slate-200" />)}
             </div>
@@ -70,16 +80,14 @@ export default function ToolFeedPage({ title, subtitle, fetcher }: ToolFeedPageP
                     {tool.logo ? (
                       <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-500">
-                        No image
-                      </div>
+                      <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
                     )}
                   </div>
                   <div className="p-4">
                     <Link href={`/tools/${tool.slug}`} className="line-clamp-2 break-words text-xl font-bold text-slate-900 hover:text-indigo-600">
                       {tool.name}
                     </Link>
-                    <p className="mt-2 min-h-[60px] break-words text-sm leading-6 text-slate-600">
+                    <p className="mt-2 min-h-[60px] break-words whitespace-normal text-sm leading-6 text-slate-600">
                       {toShortDescription(tool.description)}
                     </p>
                     <div className="mt-3 flex items-center justify-between text-sm">

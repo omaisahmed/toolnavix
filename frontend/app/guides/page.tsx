@@ -63,7 +63,11 @@ export default async function GuidesPage({ searchParams }: { searchParams: Promi
             {guides.map((guide) => (
               <article key={guide.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                 <div className="aspect-[16/9] bg-slate-100">
-                  {guide.image ? <img src={guide.image} alt={guide.title} className="h-full w-full object-cover" /> : null}
+                  {guide.image ? (
+                    <img src={guide.image} alt={guide.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                  )}
                 </div>
                 <div className="p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">{guide.category || 'Guide'}</p>

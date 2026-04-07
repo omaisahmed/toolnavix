@@ -4,15 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
-
-type Settings = {
-  logo_url?: string;
-  favicon_url?: string;
-};
+import { useSettings } from '../context/SettingsContext';
 
 export default function Header() {
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>({});
+  const settings = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -27,7 +23,7 @@ export default function Header() {
     { href: '/free-ai-tools', label: 'Free AI Tools' },
     { href: '/new-ai-tools', label: 'New AI Tools' },
     { href: '/compare', label: 'Compare Tools' },
-    { href: '/guides', label: 'Guides' },
+    // { href: '/guides', label: 'Guides' },
     { href: '/blog', label: 'Blog' },
     { href: '/ai-news', label: 'AI News' },
   ];
@@ -36,20 +32,6 @@ export default function Header() {
     const syncAuth = () => setIsLoggedIn(Boolean(window.localStorage.getItem('toolnavix_token')));
     syncAuth();
     window.addEventListener('storage', syncAuth);
-
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/settings`);
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch settings:', error);
-      }
-    };
-
-    fetchSettings();
 
     return () => {
       window.removeEventListener('storage', syncAuth);
@@ -68,7 +50,15 @@ export default function Header() {
 
   return (
     <>
-    <Toaster position="top-right" />
+    <Toaster
+      position="top-right"
+      toastOptions={{
+        style: {
+          background: '#4f46e5',
+          color: '#ffffff',
+        },
+      }}
+    />
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">

@@ -29,7 +29,11 @@ async function authFetch(url: string, options: RequestInit = {}) {
 
 export async function fetchTools(params: Record<string, string> = {}) {
   const query = new URLSearchParams(params).toString();
-  const response = await fetch(`${API_BASE}/tools?${query}`, { next: { revalidate: 60 } });
+  // Disable cache for specific queries (like when fetching for edit forms)
+  const hasParams = Object.keys(params).length > 0;
+  const response = await fetch(`${API_BASE}/tools?${query}`, { 
+    next: hasParams ? { revalidate: 0 } : { revalidate: 60 }
+  });
   if (!response.ok) throw new Error('Failed to fetch tools');
   return response.json();
 }
@@ -105,7 +109,21 @@ export async function fetchPosts(params: Record<string, string> = {}) {
 
 export async function fetchDashboardPosts(params: Record<string, string> = {}) {
   const query = new URLSearchParams(params).toString();
-  return authFetch(`${API_BASE}/dashboard/posts?${query}`, { method: 'GET' });
+  const hasParams = Object.keys(params).length > 0;
+  // When params are provided (like for edit forms), disable cache
+  const url = `${API_BASE}/dashboard/posts?${query}`;
+  const token = typeof window !== 'undefined' ? window.localStorage.getItem('toolnavix_token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  
+  const response = await fetch(url, { 
+    method: 'GET',
+    headers,
+    cache: hasParams ? 'no-store' : 'default'
+  });
+  
+  if (!response.ok) throw new Error('Failed to fetch dashboard posts');
+  return response.json();
 }
 
 export async function fetchPost(slug: string) {

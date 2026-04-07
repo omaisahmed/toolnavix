@@ -55,8 +55,42 @@ export default function RichTextEditor({
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const text = event.clipboardData.getData('text/plain');
-    document.execCommand('insertText', false, text);
+    
+    // Try to get HTML content first, fall back to plain text
+    const htmlData = event.clipboardData.getData('text/html');
+    const textData = event.clipboardData.getData('text/plain');
+    
+    if (htmlData) {
+      // Sanitize and insert HTML
+      const sanitized = sanitizeRichHtml(htmlData);
+      document.execCommand('insertHTML', false, sanitized);
+    } else if (textData) {
+      // Fall back to plain text
+      document.execCommand('insertText', false, textData);
+    }
+    
+    // Handle image files from clipboard
+    const files = event.clipboardData.files;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const dataUrl = e.target?.result as string;
+            document.execCommand('insertHTML', false, `<img src="${dataUrl}" style="max-width: 100%; height: auto; margin: 10px 0;" alt="Pasted image" />`);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+    
+    setTimeout(() => {
+      if (editorRef.current) {
+        const html = sanitizeRichHtml(editorRef.current.innerHTML);
+        onChange(html);
+      }
+    }, 100);
   };
 
   const plainCount = stripHtml(value).length;
@@ -90,6 +124,30 @@ export default function RichTextEditor({
           className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600"
         >
           Link
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const dataUrl = event.target?.result as string;
+                  document.execCommand('insertHTML', false, `<img src="${dataUrl}" style="max-width: 100%; height: auto; margin: 10px 0;" alt="Inserted image" />`);
+                  handleInput();
+                };
+                reader.readAsDataURL(file);
+              }
+            };
+            fileInput.click();
+          }}
+          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600"
+        >
+          Image
         </button>
         <button type="button" onClick={() => applyCommand('removeFormat')} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600">Clear</button>
       </div>

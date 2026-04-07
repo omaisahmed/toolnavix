@@ -47,9 +47,9 @@ export function sanitizeRichHtml(value?: string | null): string {
   output = output.replace(/\son\w+\s*=\s*'[^']*'/gi, '');
   output = output.replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
 
-  // Block javascript: and data: URLs.
-  output = output.replace(/\s(href|src)\s*=\s*"(\s*(javascript:|data:)[^"]*)"/gi, ' $1="#"');
-  output = output.replace(/\s(href|src)\s*=\s*'(\s*(javascript:|data:)[^']*)'/gi, " $1='#'");
+  // Block javascript: and dangerous data: URLs, but allow data:image/ for embedded images.
+  output = output.replace(/\s(href|src)\s*=\s*"(\s*(javascript:|data:(?!image\/))[^"]*)"/gi, ' $1="#"');
+  output = output.replace(/\s(href|src)\s*=\s*'(\s*(javascript:|data:(?!image\/))[^']*)'/gi, " $1='#'");
 
   return normalizeCodeBlockEntities(output.trim());
 }

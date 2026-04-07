@@ -63,7 +63,11 @@ export default async function AiNewsPage({ searchParams }: { searchParams: Promi
             {posts.map((post) => (
               <article key={post.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                 <div className="aspect-[16/9] bg-slate-100">
-                  {post.image ? <img src={post.image} alt={post.title} className="h-full w-full object-cover" /> : null}
+                  {post.image ? (
+                    <img src={post.image} alt={post.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                  )}
                 </div>
                 <div className="p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">{post.category || 'News'}</p>

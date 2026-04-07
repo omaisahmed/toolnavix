@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fetchTools } from '../lib/api';
 import Header from '../components/Header';
+import SaveToolButton from '../components/SaveToolButton';
 
 type Tool = {
   id: number;
@@ -147,13 +148,12 @@ export default function ComparePage() {
           <section className="grid gap-4 md:grid-cols-3">
             {selected.map((tool, index) => (
               <article key={`${tool.id}-${index}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="aspect-[16/9] bg-slate-100">
+              <div className="relative aspect-[16/9] bg-slate-100">
+                <SaveToolButton toolId={tool.id} variant="overlay" />
                 {tool.logo ? (
                   <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-500">
-                    No image
-                  </div>
+                  <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
                 )}
               </div>
               <div className="p-4">

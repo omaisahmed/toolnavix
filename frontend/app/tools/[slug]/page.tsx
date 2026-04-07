@@ -148,9 +148,7 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
                     {relatedTool.logo ? (
                       <img src={relatedTool.logo} alt={relatedTool.name} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-500">
-                        No image
-                      </div>
+                      <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
                     )}
                   </div>
                   <div className="p-4">

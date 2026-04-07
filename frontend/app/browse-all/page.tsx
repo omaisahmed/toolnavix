@@ -29,10 +29,13 @@ function toShortDescription(value?: string, max = 120) {
 export default function BrowseAllPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [showLoadingState, setShowLoadingState] = useState(false);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [category, setCategory] = useState('');
+  const [categoryInput, setCategoryInput] = useState('');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [pricing, setPricing] = useState('');
   const [rating, setRating] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -49,6 +52,9 @@ export default function BrowseAllPage() {
 
   useEffect(() => {
     setLoading(true);
+    // Only show loading state after 300ms to avoid flashing on initial load
+    const loadingTimer = setTimeout(() => setShowLoadingState(true), 300);
+    
     fetchTools({
       page: String(page),
       category,
@@ -61,7 +67,13 @@ export default function BrowseAllPage() {
         setTools(res.data ?? []);
         setLastPage(res.last_page ?? 1);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setShowLoadingState(false);
+        clearTimeout(loadingTimer);
+      });
+      
+    return () => clearTimeout(loadingTimer);
   }, [page, category, pricing, rating, search]);
 
   return (
@@ -73,10 +85,46 @@ export default function BrowseAllPage() {
             <h1 className="text-3xl font-bold text-slate-900">Browse All Tools</h1>
             <div className="mt-5 grid gap-3 md:grid-cols-4">
               <input value={searchInput} onChange={(e) => { setPage(1); setSearchInput(e.target.value); }} placeholder="Search tools..." className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              <select value={category} onChange={(e) => { setPage(1); setCategory(e.target.value); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                <option value="">All categories</option>
-                {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={categoryInput || categories.find((c) => c.slug === category)?.name || ''}
+                  onChange={(e) => {
+                    setPage(1);
+                    setCategory('');
+                    setCategoryInput(e.target.value);
+                    setCategoryDropdownOpen(true);
+                  }}
+                  onFocus={() => setCategoryDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setCategoryDropdownOpen(false), 120)}
+                  placeholder="Search category..."
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm w-full"
+                  autoComplete="off"
+                />
+                {categoryDropdownOpen && (
+                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                    {categories.filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase())).length > 0 ? (
+                      categories.filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase())).map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setCategory(c.slug);
+                            setCategoryInput(c.name);
+                            setCategoryDropdownOpen(false);
+                          }}
+                          className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        >
+                          {c.name}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-xs text-slate-500">No matching categories</p>
+                    )}
+                  </div>
+                )}
+              </div>
               <select value={pricing} onChange={(e) => { setPage(1); setPricing(e.target.value); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
                 <option value="">All pricing</option>
                 <option value="free">Free</option>
@@ -95,7 +143,7 @@ export default function BrowseAllPage() {
             </div>
           </section>
 
-          {loading ? (
+          {showLoadingState ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-72 animate-pulse rounded-2xl bg-slate-200" />)}
             </div>
@@ -105,18 +153,23 @@ export default function BrowseAllPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tools.map((tool) => (
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <div className="aspect-[16/9] bg-slate-100">
-                    {tool.logo ? <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" /> : null}
+                  <div className="relative aspect-[16/9] bg-slate-100">
+                    <SaveToolButton toolId={tool.id} variant="overlay" />
+                    {tool.logo ? (
+                      <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                    )}
                   </div>
                   <div className="p-4">
                     <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-xl font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
-                    <p className="mt-2 line-clamp-3 text-sm text-slate-600">{toShortDescription(tool.description)}</p>
+                    <p className="mt-2 break-words whitespace-normal text-sm text-slate-600">{toShortDescription(tool.description)}</p>
                     <div className="mt-3 flex items-center justify-between text-sm">
                       <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-700">{tool.category?.name || 'Uncategorized'}</span>
                       <span className="font-semibold text-indigo-700">{tool.pricing}</span>
                     </div>
                     <div className="mt-3 flex justify-end">
-                      <SaveToolButton toolId={tool.id} />
+                        <SaveToolButton toolId={tool.id} variant="overlay" />
                     </div>
                   </div>
                 </article>

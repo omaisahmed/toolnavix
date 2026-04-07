@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchTools, fetchCategories, fetchPublicSettings } from './lib/api';
+import { fetchTools, fetchCategories } from './lib/api';
 import Header from './components/Header';
 import SaveToolButton from './components/SaveToolButton';
 import { stripHtml } from './lib/richText';
+import { useSettings } from './context/SettingsContext';
 
 type HomepageTool = {
   id: number;
@@ -30,18 +31,6 @@ type Category = {
   icon?: string | null;
 };
 
-type PublicSettings = {
-  footer_text?: string | null;
-  hero_badge?: string | null;
-  hero_title?: string | null;
-  hero_subtitle?: string | null;
-  hero_search_placeholder?: string | null;
-  hero_search_button_text?: string | null;
-  hero_tag_1?: string | null;
-  hero_tag_2?: string | null;
-  hero_tag_3?: string | null;
-};
-
 function toShortDescription(value?: string, max = 120): string {
   if (!value) return 'No description available.';
   const plain = stripHtml(value);
@@ -57,9 +46,7 @@ function ToolCard({ tool, badge }: { tool: HomepageTool; badge: string }) {
         {tool.logo ? (
           <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-semibold text-slate-500">
-            No image
-          </div>
+          <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
         )}
         {/* <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow">
           {badge}
@@ -142,36 +129,46 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tools, setTools] = useState<HomepageTool[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [publicSettings, setPublicSettings] = useState<PublicSettings>({});
-  const [loading, setLoading] = useState(true);
+  const [toolsLoading, setToolsLoading] = useState(false);
+  const [showToolsLoading, setShowToolsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const heroBadge = publicSettings.hero_badge || 'AI tools marketplace';
-  const heroTitle = publicSettings.hero_title || 'Find the exact AI tool you need, instantly';
-  const heroSubtitle = publicSettings.hero_subtitle || 'Search, compare and bookmark AI tools with Smart AI search, categories, and personalized collections.';
-  const heroSearchPlaceholder = publicSettings.hero_search_placeholder || 'Search AI tools by use case (e.g. create YouTube videos)';
-  const heroSearchButtonText = publicSettings.hero_search_button_text || 'Search';
-  const heroTags = [publicSettings.hero_tag_1, publicSettings.hero_tag_2, publicSettings.hero_tag_3]
+  const settings = useSettings();
+  
+  const heroBadge = (settings.hero_badge as string) || 'AI tools marketplace';
+  const heroTitle = (settings.hero_title as string) || 'Find the exact AI tool you need, instantly';
+  const heroSubtitle = (settings.hero_subtitle as string) || 'Search, compare and bookmark AI tools with Smart AI search, categories, and personalized collections.';
+  const heroSearchPlaceholder = (settings.hero_search_placeholder as string) || 'Search AI tools by use case (e.g. create YouTube videos)';
+  const heroSearchButtonText = (settings.hero_search_button_text as string) || 'Search';
+  const heroTags = [
+    (settings.hero_tag_1 as string),
+    (settings.hero_tag_2 as string),
+    (settings.hero_tag_3 as string),
+  ]
     .map((tag) => (tag || '').trim())
     .filter(Boolean);
   const displayHeroTags = heroTags.length > 0 ? heroTags : ['YouTube tools', 'AI editors', 'Script generators'];
 
   useEffect(() => {
     async function loadHomepageData() {
+      setToolsLoading(true);
+      // Only show loading state after 300ms to avoid flashing on initial load
+      const loadingTimer = setTimeout(() => setShowToolsLoading(true), 300);
+      
       try {
-        const [toolsData, categoriesData, settingsData] = await Promise.all([
+        const [toolsData, categoriesData] = await Promise.all([
           fetchTools({ per_page: '50' }),
           fetchCategories(),
-          fetchPublicSettings().catch(() => ({})),
         ]);
 
         setTools(toolsData.data ?? toolsData);
         setCategories(categoriesData);
-        setPublicSettings(settingsData ?? {});
       } catch {
-        setError('Unable to load homepage data.');
+        setError('Unable to load homepage tools.');
       } finally {
-        setLoading(false);
+        setToolsLoading(false);
+        setShowToolsLoading(false);
+        clearTimeout(loadingTimer);
       }
     }
 
@@ -220,7 +217,7 @@ export default function Home() {
         </section>
       )}
 
-      {loading ? (
+      {toolsLoading && showToolsLoading ? (
         <section className="container pb-12">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading tools...</div>
         </section>
@@ -289,7 +286,7 @@ export default function Home() {
 
       <footer className="border-t border-slate-200 bg-white py-7">
         <div className="container text-center text-sm text-slate-600">
-          <p>{publicSettings.footer_text || `© ${new Date().getFullYear()} ToolNavix. All rights reserved.`}</p>
+          <p>{(settings.footer_text as string) || `© ${new Date().getFullYear()} ToolNavix. All rights reserved.`}</p>
         </div>
       </footer>
     </main>

@@ -47,7 +47,13 @@ export default function CategoryToolsPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tools.map((tool) => (
               <article key={tool.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="aspect-[16/9] bg-slate-100">{tool.logo ? <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" /> : null}</div>
+                <div className="aspect-[16/9] bg-slate-100">
+                  {tool.logo ? (
+                    <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                  )}
+                </div>
                 <div className="p-4">
                   <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-lg font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
                   <p className="mt-2 line-clamp-3 text-sm text-slate-600">{stripHtml(tool.description)}</p>

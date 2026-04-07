@@ -1,0 +1,207 @@
+'use client';
+
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { createUser, updateUser, fetchDashboardUsers, fetchSettings } from '../../lib/api';
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  is_admin: boolean;
+  banned: boolean;
+  created_at: string;
+};
+
+type Settings = {
+  logo_url?: string;
+};
+
+function UserFormContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const userId = searchParams?.get('id');
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(!!userId);
+  
+  const handleLogout = () => {
+    localStorage.removeItem('toolnavix_token');
+    window.location.href = '/login';
+  };
+
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    is_admin: false,
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchSettings().then(s => setSettings(s)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (userId) {
+      setIsLoadingData(true);
+      const loadUser = async () => {
+        try {
+          const users = await fetchDashboardUsers();
+          const found = users.find((u) => String(u.id) === userId);
+          if (found) {
+            setForm({
+              name: found.name,
+              email: found.email,
+              password: '',
+              is_admin: found.is_admin,
+            });
+          } else {
+            toast.error('User not found');
+            router.push('/dashboard?tab=Users');
+          }
+        } catch (error) {
+          toast.error('Failed to load user');
+          router.push('/dashboard?tab=Users');
+        } finally {
+          setIsLoadingData(false);
+        }
+      };
+      loadUser();
+    }
+  }, [userId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const payload = userId ? 
+        { name: form.name, email: form.email, is_admin: form.is_admin, ...(form.password && { password: form.password }) } :
+        form;
+      
+      if (userId) {
+        await updateUser(Number(userId), payload);
+        toast.success('User updated successfully.');
+      } else {
+        await createUser(payload);
+        toast.success('User created successfully.');
+      }
+      router.push('/dashboard?tab=Users');
+    } catch (error) {
+      toast.error(userId ? 'Failed to update user' : 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <aside className="sticky top-0 h-screen w-64 border-r border-slate-200 bg-white p-6 overflow-y-auto">
+        <div className="flex items-center gap-3 mb-8">
+          {settings?.logo_url ? (
+            <div className="h-10 overflow-hidden rounded-lg bg-white flex items-center justify-center">
+              <img src={settings.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          )}
+        </div>
+        <nav className="space-y-2">
+          {['Overview', 'Tools', 'Categories', 'Content', 'Users', 'Settings'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => router.push(`/dashboard?tab=${tab}`)}
+              className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                tab === 'Users' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+        <div className="mt-auto pt-8">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 overflow-auto">
+        <div className="py-8 px-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
+              <span>Dashboard</span>
+              <span>/</span>
+              <span>Users</span>
+              {userId && (
+                <>
+                  <span>/</span>
+                  <span>{userId ? 'Edit' : 'Create'}</span>
+                </>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900">{userId ? 'Edit User' : 'Create New User'}</h1>
+            <p className="text-slate-600 mt-2">Fill in the details below to {userId ? 'update' : 'create'} a user account</p>
+          </div>
+
+          {isLoadingData && (
+            <div className="mb-6 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-8">
+              <div className="text-center">
+                <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-3 border-slate-200 border-t-indigo-600"></div>
+                <p className="text-sm text-slate-600">Loading user data...</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4" style={{ display: isLoadingData ? 'none' : 'block' }}>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Name</label>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" required />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Email</label>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" required />
+            </div>
+            {!userId && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">Password</label>
+                <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" required />
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-4">
+              <button type="button" onClick={() => router.push('/dashboard?tab=Users')} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              <button type="submit" disabled={loading} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                {userId ? 'Update User' : 'Create User'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default function UserFormPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
+          <p className="text-sm text-slate-600">Loading form...</p>
+        </div>
+      </div>
+    }>
+      <UserFormContent />
+    </Suspense>
+  );
+}

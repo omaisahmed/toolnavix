@@ -31,8 +31,20 @@ export default function SaveToolButton({ toolId, variant = 'default' }: SaveTool
 
   const toggleSave = async () => {
     if (!isLoggedIn) {
-      toast('Please login to add this tool.', { icon: '🔐' });
-      router.push('/login');
+      toast((t) => (
+        <div className="flex items-center justify-between gap-3">
+          <span>Please login to add this tool.</span>
+          <button
+            onClick={() => {
+              router.push('/login');
+              toast.dismiss(t.id);
+            }}
+            className="whitespace-nowrap rounded bg-white px-3 py-1 text-sm font-semibold text-indigo-600 hover:bg-slate-100"
+          >
+            Login
+          </button>
+        </div>
+      ), { icon: '🔐' });
       return;
     }
 

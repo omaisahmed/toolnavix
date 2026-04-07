@@ -129,12 +129,12 @@ class ToolController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'slug' => 'nullable|string|max:255|unique:tools,slug',
-            'description' => 'required|string|max:5000',
             'category_id' => 'required|exists:categories,id',
             'pricing' => 'required|in:free,paid,freemium,free_trial,Free trial',
             'rating' => 'nullable|numeric|min:0|max:5',
-            'visit_url' => 'required|url',
+            'visit_url' => 'nullable|url',
             'logo' => 'sometimes|image|max:10240',
             'remove_logo' => 'sometimes|boolean',
             'featured' => 'boolean',
@@ -171,8 +171,8 @@ class ToolController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
             'slug' => 'sometimes|nullable|string|max:255|unique:tools,slug,'.$tool->id,
-            'description' => 'sometimes|string|max:5000',
             'category_id' => 'sometimes|exists:categories,id',
             'pricing' => 'sometimes|in:free,paid,freemium,free_trial,Free trial',
             'rating' => 'sometimes|numeric|min:0|max:5',
