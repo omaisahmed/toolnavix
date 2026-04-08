@@ -1568,13 +1568,12 @@ function DashboardPageContent() {
             )}
 
             {activeTab === 'Settings' && (
-              <section className="card">
-                <h2 className="text-lg font-semibold text-slate-900 mb-6">Settings</h2>
-                <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-700 mb-4">Current dashboard branding</p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-center">
-                      <span className="text-xs uppercase tracking-[0.2em] text-slate-500">Current logo</span>
+              <section className="space-y-8">
+                <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                  <h2 className="mb-6 text-xl font-semibold text-slate-900">Current Branding</h2>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+                      <span className="text-xs uppercase tracking-[0.2em] text-slate-500 font-medium">Current Logo</span>
                       {settings.logo_url ? (
                         <div className="h-20 w-20 overflow-hidden rounded-2xl border border-slate-200 bg-white flex items-center justify-center">
                           <img src={settings.logo_url} alt="Current logo" className="max-h-full max-w-full object-contain" />
@@ -1586,8 +1585,8 @@ function DashboardPageContent() {
                       )}
                       <span className="text-xs text-slate-500 break-all">{settings.logo_url || 'Logo URL not available'}</span>
                     </div>
-                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-center">
-                      <span className="text-xs uppercase tracking-[0.2em] text-slate-500">Current favicon</span>
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+                      <span className="text-xs uppercase tracking-[0.2em] text-slate-500 font-medium">Current Favicon</span>
                       {settings.favicon_url ? (
                         <div className="h-20 w-20 overflow-hidden rounded-2xl border border-slate-200 bg-white flex items-center justify-center">
                           <img src={settings.favicon_url} alt="Current favicon" className="max-h-full max-w-full object-contain" />
@@ -1601,141 +1600,152 @@ function DashboardPageContent() {
                     </div>
                   </div>
                 </div>
-                <form onSubmit={handleSettingsSubmit} className="space-y-6">
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Logo</label>
-                      <div className="mt-2 flex items-center gap-4">
-                        {settings.logo_url && (
-                          <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center">
-                            <img src={settings.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
-                          </div>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
-                        />
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">Recommended: 512x512px</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Favicon</label>
-                      <div className="mt-2 flex items-center gap-4">
-                        {settings.favicon_url && (
-                          <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center">
-                            <img src={settings.favicon_url} alt="Favicon" className="max-h-full max-w-full object-contain" />
-                          </div>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setFaviconFile(e.target.files?.[0] || null)}
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
-                        />
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">Recommended: 256x256px or 64x64px</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Footer Text</label>
-                    <textarea
-                      value={settings.footer_text || ''}
-                      onChange={(e) => setSettings({ ...settings, footer_text: e.target.value })}
-                      className="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2"
-                      rows={2}
-                      placeholder="© 2026 ToolNavix. All rights reserved."
-                    />
-                    <p className="mt-1 text-xs text-slate-500">This text appears in the website footer.</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-sm font-semibold text-slate-800">Homepage Hero Content</p>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+
+                <form onSubmit={handleSettingsSubmit} className="space-y-8">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                    <h2 className="mb-6 text-xl font-semibold text-slate-900">Branding Assets</h2>
+                    <div className="grid gap-6 lg:grid-cols-2">
                       <div>
-                        <label className="text-sm font-medium text-slate-700">Hero Badge</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+                        <div className="flex items-center gap-4">
+                          {settings.logo_url && (
+                            <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center">
+                              <img src={settings.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">Recommended: 512x512px</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Favicon</label>
+                        <div className="flex items-center gap-4">
+                          {settings.favicon_url && (
+                            <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center">
+                              <img src={settings.favicon_url} alt="Favicon" className="max-h-full max-w-full object-contain" />
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setFaviconFile(e.target.files?.[0] || null)}
+                            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">Recommended: 256x256px or 64x64px</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Footer Text</label>
+                      <textarea
+                        value={settings.footer_text || ''}
+                        onChange={(e) => setSettings({ ...settings, footer_text: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        rows={2}
+                        placeholder="© 2026 ToolNavix. All rights reserved."
+                      />
+                      <p className="mt-1 text-xs text-slate-500">This text appears in the website footer.</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                    <h2 className="mb-6 text-xl font-semibold text-slate-900">Homepage Hero Content</h2>
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Hero Badge</label>
                         <input
                           value={settings.hero_badge || ''}
                           onChange={(e) => setSettings({ ...settings, hero_badge: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                           placeholder="AI tools marketplace"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-slate-700">Search Button Text</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Search Button Text</label>
                         <input
                           value={settings.hero_search_button_text || ''}
                           onChange={(e) => setSettings({ ...settings, hero_search_button_text: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                           placeholder="AI Search"
                         />
                       </div>
                     </div>
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-slate-700">Hero Title</label>
+
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Hero Title</label>
                       <textarea
                         value={settings.hero_title || ''}
                         onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                         rows={2}
                         placeholder="Find the exact AI tool you need, instantly"
                       />
                     </div>
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-slate-700">Hero Subtitle</label>
+
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Hero Subtitle</label>
                       <textarea
                         value={settings.hero_subtitle || ''}
                         onChange={(e) => setSettings({ ...settings, hero_subtitle: e.target.value })}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                         rows={3}
                         placeholder="Search, compare and bookmark AI tools..."
                       />
                     </div>
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-slate-700">Search Placeholder</label>
+
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Search Placeholder</label>
                       <input
                         value={settings.hero_search_placeholder || ''}
                         onChange={(e) => setSettings({ ...settings, hero_search_placeholder: e.target.value })}
-                        className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                         placeholder="Search AI tools by use case..."
                       />
                     </div>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+
+                    <div className="mt-6 grid gap-6 sm:grid-cols-3">
                       <div>
-                        <label className="text-sm font-medium text-slate-700">Tag 1</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Tag 1</label>
                         <input
                           value={settings.hero_tag_1 || ''}
                           onChange={(e) => setSettings({ ...settings, hero_tag_1: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                           placeholder="YouTube tools"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-slate-700">Tag 2</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Tag 2</label>
                         <input
                           value={settings.hero_tag_2 || ''}
                           onChange={(e) => setSettings({ ...settings, hero_tag_2: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                           placeholder="AI editors"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-slate-700">Tag 3</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Tag 3</label>
                         <input
                           value={settings.hero_tag_3 || ''}
                           onChange={(e) => setSettings({ ...settings, hero_tag_3: e.target.value })}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                           placeholder="Script generators"
                         />
                       </div>
                     </div>
                     <p className="mt-3 text-xs text-slate-500">Leave any field empty to use default homepage text.</p>
                   </div>
-                  <div className="flex justify-end gap-3 pt-4">
+
+                  <div className="flex gap-3 pt-6">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="rounded-xl bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                     >
                       Save Settings
                     </button>

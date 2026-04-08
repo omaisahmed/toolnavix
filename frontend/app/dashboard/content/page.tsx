@@ -398,7 +398,7 @@ function ContentFormContent() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-8 pb-8">
+            <div className="flex gap-3">
               <button type="submit" disabled={loading} className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all">
                 {loading ? 'Saving...' : postId ? 'Update Post' : 'Create Post'}
               </button>
