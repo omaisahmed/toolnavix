@@ -45,7 +45,7 @@ export function FormField({
       {type === 'textarea' ? (
         <textarea
           name={name}
-          value={value}
+          value={String(value)}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
@@ -55,7 +55,7 @@ export function FormField({
       ) : type === 'select' ? (
         <select
           name={name}
-          value={value}
+          value={String(value)}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           className={baseInputClass}
@@ -71,7 +71,7 @@ export function FormField({
         <input
           type="password"
           name={name}
-          value={value}
+          value={String(value)}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
@@ -85,7 +85,7 @@ export function FormField({
             <input
               type={type}
               name={name}
-              value={value}
+              value={type === 'number' ? (typeof value === 'number' ? value : Number(value) || 0) : String(value)}
               onChange={(e) =>
                 onChange(type === 'number' ? e.target.valueAsNumber : e.target.value)
               }

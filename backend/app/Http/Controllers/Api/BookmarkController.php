@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bookmark;
+use App\Http\Requests\StoreBookmarkRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class BookmarkController extends Controller
 {
@@ -16,17 +16,9 @@ class BookmarkController extends Controller
         return response()->json($bookmarks);
     }
 
-    public function store(Request $request)
+    public function store(StoreBookmarkRequest $request)
     {
         $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'tool_id' => 'required|exists:tools,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
 
         $bookmark = Bookmark::updateOrCreate([
             'user_id' => $user->id,

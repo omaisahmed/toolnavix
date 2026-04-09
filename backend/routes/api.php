@@ -41,14 +41,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/tools/{tool}', [ToolController::class, 'update']);
     Route::post('/tools/{tool}', [ToolController::class, 'update']);
     Route::delete('/tools/{tool}', [ToolController::class, 'destroy']);
+    Route::delete('/tools', [ToolController::class, 'bulkDestroy']);
 
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{category}', [CategoryController::class, 'update']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+    Route::delete('/categories', [CategoryController::class, 'bulkDestroy']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::put('/posts/{post}', [PostController::class, 'update']);
     Route::post('/posts/{post}', [PostController::class, 'update']);
     Route::delete('/posts/{post}', [PostController::class, 'destroy']);
+    Route::delete('/posts', [PostController::class, 'bulkDestroy']);
     Route::get('/dashboard/posts', [PostController::class, 'index']);
 
     Route::get('/dashboard/stats', [AdminController::class, 'stats']);
@@ -60,7 +63,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/dashboard/users/{user}', [AdminController::class, 'updateUser']);
     Route::post('/dashboard/users/{user}/ban', [AdminController::class, 'banUser']);
     Route::delete('/dashboard/users/{user}', [AdminController::class, 'deleteUser']);
+    Route::delete('/dashboard/users', [AdminController::class, 'bulkDeleteUsers']);
     Route::get('/dashboard/reviews', [AdminController::class, 'reviews']);
     Route::post('/dashboard/reviews/{review}/approve', [AdminController::class, 'approveReview']);
     Route::delete('/dashboard/reviews/{review}', [AdminController::class, 'deleteReview']);
+    Route::delete('/dashboard/reviews', [AdminController::class, 'bulkDeleteReviews']);
 });

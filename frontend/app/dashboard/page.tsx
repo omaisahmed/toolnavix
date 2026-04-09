@@ -15,6 +15,11 @@ import {
   deleteReview,
   deleteTool,
   deleteUser,
+  bulkDeleteCategories,
+  bulkDeletePosts,
+  bulkDeleteTools,
+  bulkDeleteUsers,
+  bulkDeleteReviews,
   fetchCategories,
   fetchDashboardReviews,
   fetchDashboardStats,
@@ -618,6 +623,14 @@ function DashboardPageContent() {
     }
   }, [searchParams]);
 
+  // Clear selections when tab changes
+  useEffect(() => {
+    setSelectedTools(new Set());
+    setSelectedCategories(new Set());
+    setSelectedPosts(new Set());
+    setSelectedUsers(new Set());
+  }, [activeTab]);
+
   // Initialize state with cached data
   const initializeFromCache = () => {
     if (typeof window === 'undefined') return {};
@@ -705,6 +718,12 @@ function DashboardPageContent() {
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [formModal, setFormModal] = useState<FormModalState>({ isOpen: false, type: null, mode: 'create' });
   const [formData, setFormData] = useState<any>({});
+
+  // Bulk delete state
+  const [selectedTools, setSelectedTools] = useState<Set<number>>(new Set());
+  const [selectedCategories, setSelectedCategories] = useState<Set<number>>(new Set());
+  const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
+  const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
 
   // Initialize with cache only after hydration
   useEffect(() => {
@@ -1477,6 +1496,121 @@ function DashboardPageContent() {
     });
   };
 
+  // Bulk delete functions
+  const handleBulkDeleteTools = async () => {
+    const toolIds = Array.from(selectedTools);
+    if (toolIds.length === 0) return;
+
+    setModal({
+      isOpen: true,
+      title: 'Delete Tools',
+      message: `Are you sure you want to delete ${toolIds.length} tool${toolIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+          await bulkDeleteTools(toolIds);
+          toast.success(`${toolIds.length} tool${toolIds.length > 1 ? 's' : ''} deleted successfully.`);
+          setSelectedTools(new Set());
+          await loadData();
+        } catch (err: any) {
+          setError(err.message || 'Unable to delete tools.');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteCategories = async () => {
+    const categoryIds = Array.from(selectedCategories);
+    if (categoryIds.length === 0) return;
+
+    setModal({
+      isOpen: true,
+      title: 'Delete Categories',
+      message: `Are you sure you want to delete ${categoryIds.length} categor${categoryIds.length > 1 ? 'ies' : 'y'}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+          await bulkDeleteCategories(categoryIds);
+          toast.success(`${categoryIds.length} categor${categoryIds.length > 1 ? 'ies' : 'y'} deleted successfully.`);
+          setSelectedCategories(new Set());
+          await loadData();
+        } catch (err: any) {
+          setError(err.message || 'Unable to delete categories.');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleBulkDeletePosts = async () => {
+    const postIds = Array.from(selectedPosts);
+    if (postIds.length === 0) return;
+
+    setModal({
+      isOpen: true,
+      title: 'Delete Posts',
+      message: `Are you sure you want to delete ${postIds.length} post${postIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+          await bulkDeletePosts(postIds);
+          toast.success(`${postIds.length} post${postIds.length > 1 ? 's' : ''} deleted successfully.`);
+          setSelectedPosts(new Set());
+          await loadData();
+        } catch (err: any) {
+          setError(err.message || 'Unable to delete posts.');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteUsers = async () => {
+    const userIds = Array.from(selectedUsers);
+    // Filter out admin users
+    const nonAdminUserIds = userIds.filter(id => {
+      const user = users.find(u => u.id === id);
+      return user && !user.is_admin;
+    });
+    
+    if (nonAdminUserIds.length === 0) return;
+
+    setModal({
+      isOpen: true,
+      title: 'Delete Users',
+      message: `Are you sure you want to permanently delete ${nonAdminUserIds.length} user${nonAdminUserIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+          await bulkDeleteUsers(nonAdminUserIds);
+          toast.success(`${nonAdminUserIds.length} user${nonAdminUserIds.length > 1 ? 's' : ''} deleted successfully.`);
+          setSelectedUsers(new Set());
+          await loadData();
+        } catch (err: any) {
+          setError(err.message || 'Unable to delete users.');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
   const toolsByStatus = useMemo(() => ({
     top: tools.filter((tool) => tool.is_top),
     trending: tools.filter((tool) => tool.trending),
@@ -1897,9 +2031,40 @@ function DashboardPageContent() {
                   addNewLabel="Create Tools"
                 />
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  {/* Bulk Actions */}
+                  {selectedTools.size > 0 && (
+                    <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">
+                          {selectedTools.size} tool{selectedTools.size > 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={handleBulkDeleteTools}
+                          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                          disabled={loading}
+                        >
+                          Delete Selected
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-600">
                       <tr>
+                        <th className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={filteredTools.length > 0 && selectedTools.size === filteredTools.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTools(new Set(filteredTools.map(tool => tool.id)));
+                              } else {
+                                setSelectedTools(new Set());
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </th>
                         <th className="px-4 py-3">Name</th>
                         <th className="px-4 py-3">Category</th>
                         <th className="px-4 py-3">Pricing</th>
@@ -1910,6 +2075,22 @@ function DashboardPageContent() {
                     <tbody>
                       {filteredTools.map((tool) => (
                         <tr key={tool.id} className="border-t border-slate-200">
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedTools.has(tool.id)}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedTools);
+                                if (e.target.checked) {
+                                  newSelected.add(tool.id);
+                                } else {
+                                  newSelected.delete(tool.id);
+                                }
+                                setSelectedTools(newSelected);
+                              }}
+                              className="rounded border-slate-300"
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-16 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
@@ -1951,25 +2132,80 @@ function DashboardPageContent() {
                   addNewLabel="Create Category"
                 />
                 <div className="space-y-3">
-                  {filteredCategories.map((category) => (
-                    <div key={category.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                            <i className={category.icon || 'bi bi-grid'} aria-hidden="true" />
-                          </span>
-                          <div>
-                            <p className="font-semibold text-slate-900">{category.name}</p>
-                            <p className="text-sm text-slate-500">{category.slug}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => router.push(`/dashboard/categories?id=${category.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
-                          <button onClick={() => handleDeleteCategory(category.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200">Delete</button>
-                        </div>
+                  {/* Bulk Actions */}
+                  {selectedCategories.size > 0 && (
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">
+                          {selectedCategories.size} categor{selectedCategories.size > 1 ? 'ies' : 'y'} selected
+                        </span>
+                        <button
+                          onClick={handleBulkDeleteCategories}
+                          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                          disabled={loading}
+                        >
+                          Delete Selected
+                        </button>
                       </div>
                     </div>
-                  ))}
+                  )}
+                  {filteredCategories.length > 0 && (
+                    <div className="rounded-3xl border border-slate-200 bg-white">
+                      <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={filteredCategories.length > 0 && selectedCategories.size === filteredCategories.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCategories(new Set(filteredCategories.map((category) => category.id)));
+                              } else {
+                                setSelectedCategories(new Set());
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                          Select all
+                        </label>
+                        <span className="text-sm text-slate-500">{filteredCategories.length} categor{filteredCategories.length > 1 ? 'ies' : 'y'}</span>
+                      </div>
+                      <div className="space-y-3 p-4">
+                        {filteredCategories.map((category) => (
+                          <div key={category.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedCategories.has(category.id)}
+                                  onChange={(e) => {
+                                    const newSelected = new Set(selectedCategories);
+                                    if (e.target.checked) {
+                                      newSelected.add(category.id);
+                                    } else {
+                                      newSelected.delete(category.id);
+                                    }
+                                    setSelectedCategories(newSelected);
+                                  }}
+                                  className="rounded border-slate-300"
+                                />
+                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                  <i className={category.icon || 'bi bi-grid'} aria-hidden="true" />
+                                </span>
+                                <div>
+                                  <p className="font-semibold text-slate-900">{category.name}</p>
+                                  <p className="text-sm text-slate-500">{category.slug}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => router.push(`/dashboard/categories?id=${category.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
+                                <button onClick={() => handleDeleteCategory(category.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200">Delete</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             )}
@@ -2014,9 +2250,40 @@ function DashboardPageContent() {
                 />
 
                 <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  {/* Bulk Actions */}
+                  {selectedPosts.size > 0 && (
+                    <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">
+                          {selectedPosts.size} post{selectedPosts.size > 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={handleBulkDeletePosts}
+                          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                          disabled={loading}
+                        >
+                          Delete Selected
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-600">
                       <tr>
+                        <th className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={filteredPosts.length > 0 && selectedPosts.size === filteredPosts.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPosts(new Set(filteredPosts.map(post => post.id)));
+                              } else {
+                                setSelectedPosts(new Set());
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </th>
                         <th className="px-4 py-3">Post</th>
                         <th className="px-4 py-3">Type</th>
                         <th className="px-4 py-3">Status</th>
@@ -2027,6 +2294,22 @@ function DashboardPageContent() {
                     <tbody>
                       {filteredPosts.map((post) => (
                         <tr key={post.id} className="border-t border-slate-200">
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedPosts.has(post.id)}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedPosts);
+                                if (e.target.checked) {
+                                  newSelected.add(post.id);
+                                } else {
+                                  newSelected.delete(post.id);
+                                }
+                                setSelectedPosts(newSelected);
+                              }}
+                              className="rounded border-slate-300"
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
@@ -2053,7 +2336,7 @@ function DashboardPageContent() {
                       ))}
                       {filteredPosts.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No content found.</td>
+                          <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No content found.</td>
                         </tr>
                       )}
                     </tbody>
@@ -2078,9 +2361,40 @@ function DashboardPageContent() {
                 />
 
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  {/* Bulk Actions */}
+                  {selectedUsers.size > 0 && (
+                    <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">
+                          {selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={handleBulkDeleteUsers}
+                          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                          disabled={loading}
+                        >
+                          Delete Selected
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-600">
                       <tr>
+                        <th className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={filteredUsers.filter(u => !u.is_admin).length > 0 && selectedUsers.size === filteredUsers.filter(u => !u.is_admin).length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUsers(new Set(filteredUsers.filter(u => !u.is_admin).map(user => user.id)));
+                              } else {
+                                setSelectedUsers(new Set());
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </th>
                         <th className="px-4 py-3">Name</th>
                         <th className="px-4 py-3">Email</th>
                         <th className="px-4 py-3">Role</th>
@@ -2091,6 +2405,23 @@ function DashboardPageContent() {
                     <tbody>
                       {filteredUsers.map((user) => (
                         <tr key={user.id} className="border-t border-slate-200">
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.has(user.id)}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedUsers);
+                                if (e.target.checked) {
+                                  newSelected.add(user.id);
+                                } else {
+                                  newSelected.delete(user.id);
+                                }
+                                setSelectedUsers(newSelected);
+                              }}
+                              disabled={user.is_admin}
+                              className="rounded border-slate-300 disabled:opacity-50"
+                            />
+                          </td>
                           <td className="px-4 py-3">{user.name}</td>
                           <td className="px-4 py-3">{user.email}</td>
                           <td className="px-4 py-3">{user.is_admin ? 'Admin' : 'Member'}</td>
@@ -2107,7 +2438,7 @@ function DashboardPageContent() {
                       ))}
                       {filteredUsers.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No users found.</td>
+                          <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No users found.</td>
                         </tr>
                       )}
                     </tbody>

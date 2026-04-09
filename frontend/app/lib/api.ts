@@ -273,3 +273,23 @@ export async function updatePost(postId: number, payload: Record<string, unknown
 export async function deletePost(postId: number) {
   return authFetch(`${API_BASE}/posts/${postId}`, { method: 'DELETE' });
 }
+
+export async function bulkDeleteTools(ids: number[]) {
+  return authFetch(`${API_BASE}/tools`, { method: 'DELETE', body: JSON.stringify({ ids }) });
+}
+
+export async function bulkDeleteCategories(ids: number[]) {
+  return authFetch(`${API_BASE}/categories`, { method: 'DELETE', body: JSON.stringify({ ids }) });
+}
+
+export async function bulkDeletePosts(ids: number[]) {
+  return authFetch(`${API_BASE}/posts`, { method: 'DELETE', body: JSON.stringify({ ids }) });
+}
+
+export async function bulkDeleteUsers(ids: number[]) {
+  return authFetch(`${API_BASE}/dashboard/users`, { method: 'DELETE', body: JSON.stringify({ ids }) });
+}
+
+export async function bulkDeleteReviews(ids: number[]) {
+  return authFetch(`${API_BASE}/dashboard/reviews`, { method: 'DELETE', body: JSON.stringify({ ids }) });
+}

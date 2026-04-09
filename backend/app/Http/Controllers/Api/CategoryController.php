@@ -4,12 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\CategoryService;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Requests\BulkDestroyCategoryRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
 {
+    public function __construct(protected CategoryService $categoryService)
+    {
+    }
+
     public function index()
     {
         return response()->json(Category::orderBy('name')->get());
@@ -38,51 +45,16 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request)
     {
-        $this->authorize('admin');
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:categories,name',
-            'slug' => 'nullable|string|max:255|unique:categories,slug',
-            'description' => 'nullable|string|max:3000',
-            'icon' => 'nullable|string|max:120',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-        $data['slug'] = $this->buildUniqueSlug($data['slug'] ?? null, $data['name']);
-
-        $category = Category::create($data);
+        $category = $this->categoryService->create($request->validated());
 
         return response()->json($category, 201);
     }
 
-    public function update(Request $request, Category $category)
+    public function update(UpdateCategoryRequest $request, Category $category)
     {
-        $this->authorize('admin');
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|string|max:255|unique:categories,name,'.$category->id,
-            'slug' => 'sometimes|nullable|string|max:255|unique:categories,slug,'.$category->id,
-            'description' => 'nullable|string|max:3000',
-            'icon' => 'nullable|string|max:120',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-        if (array_key_exists('slug', $data)) {
-            $baseName = $data['name'] ?? $category->name;
-            $data['slug'] = $this->buildUniqueSlug($data['slug'], $baseName, $category->id);
-        }
-
-        $category->update($data);
+        $category = $this->categoryService->update($category, $request->validated());
 
         return response()->json($category);
     }
@@ -91,7 +63,7 @@ class CategoryController extends Controller
     {
         $this->authorize('admin');
 
-        $category->delete();
+        $this->categoryService->destroy($category);
 
         return response()->json(['message' => 'Category deleted']);
     }
@@ -115,5 +87,12 @@ class CategoryController extends Controller
         }
 
         return $slug;
+    }
+
+    public function bulkDestroy(BulkDestroyCategoryRequest $request)
+    {
+        $count = $this->categoryService->bulkDestroy($request->input('ids'));
+
+        return response()->json(['message' => $count . ' categories deleted']);
     }
 }

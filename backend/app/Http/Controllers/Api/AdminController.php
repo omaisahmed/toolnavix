@@ -9,11 +9,21 @@ use App\Models\Setting;
 use App\Models\Tool;
 use App\Models\ToolView;
 use App\Models\User;
+use App\Services\AdminService;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\UpdateSettingsRequest;
+use App\Http\Requests\BulkDeleteUsersRequest;
+use App\Http\Requests\BulkDeleteReviewsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
+    public function __construct(protected AdminService $adminService)
+    {
+    }
+
     public function stats()
     {
         return response()->json([
@@ -33,33 +43,16 @@ class AdminController extends Controller
         return response()->json(User::orderByDesc('created_at')->paginate(25));
     }
 
-    public function updateUser(User $user, Request $request)
+    public function updateUser(UpdateUserRequest $request, User $user)
     {
-        $this->authorize('admin');
-
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
-        ]);
-
-        $user->update($validated);
+        $user->update($request->validated());
 
         return response()->json(['message' => 'User updated', 'user' => $user]);
     }
 
-    public function storeUser(Request $request)
+    public function storeUser(StoreUserRequest $request)
     {
-        $this->authorize('admin');
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-        ]);
-
-        $validated['password'] = bcrypt($validated['password']);
-
-        $user = User::create($validated);
+        $user = $this->adminService->createUser($request->validated());
 
         return response()->json(['message' => 'User created', 'user' => $user], 201);
     }
@@ -68,7 +61,7 @@ class AdminController extends Controller
     {
         $this->authorize('admin');
 
-        $user->forceFill(['banned' => true])->save();
+        $this->adminService->banUser($user);
 
         return response()->json(['message' => 'User banned']);
     }
@@ -77,12 +70,11 @@ class AdminController extends Controller
     {
         $this->authorize('admin');
 
-        // Prevent deleting the last admin
-        if ($user->is_admin && User::where('is_admin', true)->count() === 1) {
-            return response()->json(['message' => 'Cannot delete the last admin user'], 400);
+        try {
+            $this->adminService->deleteUser($user);
+        } catch (\RuntimeException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 400);
         }
-
-        $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
     }
@@ -98,7 +90,7 @@ class AdminController extends Controller
     {
         $this->authorize('admin');
 
-        $review->update(['approved' => true]);
+        $this->adminService->approveReview($review);
 
         return response()->json(['message' => 'Review approved']);
     }
@@ -107,7 +99,7 @@ class AdminController extends Controller
     {
         $this->authorize('admin');
 
-        $review->delete();
+        $this->adminService->deleteReview($review);
 
         return response()->json(['message' => 'Review deleted']);
     }
@@ -150,73 +142,15 @@ class AdminController extends Controller
         return response()->json($this->formatSettings($settings));
     }
 
-    public function updateSettings(Request $request)
+    public function updateSettings(UpdateSettingsRequest $request)
     {
-        $this->authorize('admin');
+        $settings = $this->adminService->updateSettings(
+            $request->validated(),
+            $request->file('logo'),
+            $request->file('favicon')
+        );
 
-        $validated = $request->validate([
-            'logo' => 'sometimes|image|max:4096',
-            'favicon' => 'sometimes|image|max:2048',
-            'footer_text' => 'nullable|string|max:1000',
-            'hero_badge' => 'nullable|string|max:120',
-            'hero_title' => 'nullable|string|max:255',
-            'hero_subtitle' => 'nullable|string|max:1000',
-            'hero_search_placeholder' => 'nullable|string|max:255',
-            'hero_search_button_text' => 'nullable|string|max:80',
-            'hero_tag_1' => 'nullable|string|max:80',
-            'hero_tag_2' => 'nullable|string|max:80',
-            'hero_tag_3' => 'nullable|string|max:80',
-        ]);
-
-        $settings = Setting::firstOrNew();
-
-        if ($request->hasFile('logo')) {
-            if ($settings->logo_url) {
-                $this->deleteStoredFile($settings->logo_url);
-            }
-            $logoPath = $request->file('logo')->store('uploads/settings', 'public');
-            $settings->logo_url = $logoPath;
-        }
-
-        if ($request->hasFile('favicon')) {
-            if ($settings->favicon_url) {
-                $this->deleteStoredFile($settings->favicon_url);
-            }
-            $faviconPath = $request->file('favicon')->store('uploads/settings', 'public');
-            $settings->favicon_url = $faviconPath;
-        }
-
-        if (array_key_exists('footer_text', $validated)) {
-            $settings->footer_text = $validated['footer_text'] ?: null;
-        }
-        if (array_key_exists('hero_badge', $validated)) {
-            $settings->hero_badge = $validated['hero_badge'] ?: null;
-        }
-        if (array_key_exists('hero_title', $validated)) {
-            $settings->hero_title = $validated['hero_title'] ?: null;
-        }
-        if (array_key_exists('hero_subtitle', $validated)) {
-            $settings->hero_subtitle = $validated['hero_subtitle'] ?: null;
-        }
-        if (array_key_exists('hero_search_placeholder', $validated)) {
-            $settings->hero_search_placeholder = $validated['hero_search_placeholder'] ?: null;
-        }
-        if (array_key_exists('hero_search_button_text', $validated)) {
-            $settings->hero_search_button_text = $validated['hero_search_button_text'] ?: null;
-        }
-        if (array_key_exists('hero_tag_1', $validated)) {
-            $settings->hero_tag_1 = $validated['hero_tag_1'] ?: null;
-        }
-        if (array_key_exists('hero_tag_2', $validated)) {
-            $settings->hero_tag_2 = $validated['hero_tag_2'] ?: null;
-        }
-        if (array_key_exists('hero_tag_3', $validated)) {
-            $settings->hero_tag_3 = $validated['hero_tag_3'] ?: null;
-        }
-
-        $settings->save();
-
-        return response()->json(['message' => 'Settings updated', 'settings' => $this->formatSettings($settings)]);
+        return response()->json(['message' => 'Settings updated', 'settings' => $this->adminService->formatSettings($settings)]);
     }
 
     protected function deleteStoredFile(?string $path)
@@ -233,5 +167,29 @@ class AdminController extends Controller
         if (Storage::disk('public')->exists($relativePath)) {
             Storage::disk('public')->delete($relativePath);
         }
+    }
+
+    public function bulkDeleteUsers(BulkDeleteUsersRequest $request)
+    {
+        $ids = $request->input('ids');
+        $users = User::whereIn('id', $ids)->get();
+
+        foreach ($users as $user) {
+            $user->delete();
+        }
+
+        return response()->json(['message' => count($users) . ' users deleted']);
+    }
+
+    public function bulkDeleteReviews(BulkDeleteReviewsRequest $request)
+    {
+        $ids = $request->input('ids');
+        $reviews = Review::whereIn('id', $ids)->get();
+
+        foreach ($reviews as $review) {
+            $review->delete();
+        }
+
+        return response()->json(['message' => count($reviews) . ' reviews deleted']);
     }
 }

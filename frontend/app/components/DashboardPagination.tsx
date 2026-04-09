@@ -20,7 +20,7 @@ export function DashboardPagination({
 }: DashboardPaginationProps) {
   if (!meta || meta.last_page <= 1) return null;
 
-  const pages = [];
+  const pages: (number | string)[] = [];
   const startPage = Math.max(1, meta.current_page - 2);
   const endPage = Math.min(meta.last_page, meta.current_page + 2);
 

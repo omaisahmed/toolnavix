@@ -5,13 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Tool;
 use App\Models\ToolView;
+use App\Services\ToolService;
+use App\Http\Requests\StoreToolRequest;
+use App\Http\Requests\UpdateToolRequest;
+use App\Http\Requests\BulkDestroyToolRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class ToolController extends Controller
 {
+    public function __construct(protected ToolService $toolService)
+    {
+    }
+
     public function index(Request $request)
     {
         $query = Tool::with('category');
@@ -123,107 +129,25 @@ class ToolController extends Controller
         return response()->json(['message' => 'View tracked']);
     }
 
-    public function store(Request $request)
+    public function store(StoreToolRequest $request)
     {
-        $this->authorize('admin');
+        $tool = $this->toolService->create($request->validated(), $request->file('logo'));
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'slug' => 'nullable|string|max:255|unique:tools,slug',
-            'category_id' => 'required|exists:categories,id',
-            'pricing' => 'required|in:free,paid,freemium,free_trial,Free trial',
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'visit_url' => 'nullable|string',
-            'logo' => 'sometimes|image|max:10240',
-            'remove_logo' => 'sometimes|boolean',
-            'featured' => 'boolean',
-            'trending' => 'boolean',
-            'just_landed' => 'boolean',
-            'is_top' => 'boolean',
-            'features' => 'json',
-            'pros' => 'json',
-            'cons' => 'json',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-        $data['slug'] = $this->buildUniqueSlug($data['slug'] ?? null, $data['name']);
-        $data['pricing'] = $this->normalizePricing($data['pricing']);
-
-        if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('uploads/tools', 'public');
-        }
-
-        unset($data['remove_logo']);
-
-        $tool = Tool::create($data);
-
-        return response()->json($this->formatTool($tool), 201);
+        return response()->json($this->toolService->formatTool($tool), 201);
     }
 
-    public function update(Request $request, Tool $tool)
+    public function update(UpdateToolRequest $request, Tool $tool)
     {
-        $this->authorize('admin');
+        $tool = $this->toolService->update($tool, $request->validated(), $request->file('logo'));
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
-            'slug' => 'sometimes|nullable|string|max:255|unique:tools,slug,'.$tool->id,
-            'category_id' => 'sometimes|exists:categories,id',
-            'pricing' => 'sometimes|in:free,paid,freemium,free_trial,Free trial',
-            'rating' => 'sometimes|numeric|min:0|max:5',
-            'visit_url' => 'sometimes|string',
-            'logo' => 'sometimes|image|max:10240',
-            'remove_logo' => 'sometimes|boolean',
-            'featured' => 'sometimes|boolean',
-            'trending' => 'sometimes|boolean',
-            'just_landed' => 'sometimes|boolean',
-            'is_top' => 'sometimes|boolean',
-            'features' => 'sometimes|json',
-            'pros' => 'sometimes|json',
-            'cons' => 'sometimes|json',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-        if (array_key_exists('slug', $data)) {
-            $baseName = $data['name'] ?? $tool->name;
-            $data['slug'] = $this->buildUniqueSlug($data['slug'], $baseName, $tool->id);
-        }
-        if (isset($data['pricing'])) {
-            $data['pricing'] = $this->normalizePricing($data['pricing']);
-        }
-
-        if (! empty($data['remove_logo'])) {
-            $this->deleteStoredLogo($tool->getRawOriginal('logo'));
-            $data['logo'] = null;
-        }
-
-        if ($request->hasFile('logo')) {
-            $this->deleteStoredLogo($tool->getRawOriginal('logo'));
-            $data['logo'] = $request->file('logo')->store('uploads/tools', 'public');
-        }
-
-        unset($data['remove_logo']);
-
-        $tool->update($data);
-
-        return response()->json($this->formatTool($tool));
+        return response()->json($this->toolService->formatTool($tool));
     }
 
     public function destroy(Tool $tool)
     {
         $this->authorize('admin');
 
-        $this->deleteStoredLogo($tool->getRawOriginal('logo'));
-        $tool->delete();
+        $this->toolService->destroy($tool);
 
         return response()->json(['message' => 'Tool deleted']);
     }
@@ -253,6 +177,39 @@ class ToolController extends Controller
         }
     }
 
+    protected function deleteEmbeddedImagesFromValue(mixed $value): void
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $this->deleteEmbeddedImagesFromValue($item);
+            }
+
+            return;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return;
+        }
+
+        $this->deleteEmbeddedImages($value);
+    }
+
+    protected function deleteEmbeddedImages(?string $content): void
+    {
+        if (! $content) {
+            return;
+        }
+
+        // Extract image URLs from content (assuming they are in /storage/ path)
+        preg_match_all('#/storage/([^"\']+)#', $content, $matches);
+        
+        foreach ($matches[1] as $relativePath) {
+            if (Storage::disk('public')->exists($relativePath)) {
+                Storage::disk('public')->delete($relativePath);
+            }
+        }
+    }
+
     protected function normalizePricing(string $pricing): string
     {
         return $pricing === 'free_trial' ? 'Free trial' : $pricing;
@@ -277,5 +234,12 @@ class ToolController extends Controller
         }
 
         return $slug;
+    }
+
+    public function bulkDestroy(BulkDestroyToolRequest $request)
+    {
+        $count = $this->toolService->bulkDestroy($request->input('ids'));
+
+        return response()->json(['message' => $count . ' tools deleted']);
     }
 }

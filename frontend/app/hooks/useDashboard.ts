@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { dashboardCache } from '@/app/lib/dashboardCache';
+import { dashboardCache } from '../lib/dashboardCache';
 
 interface UseDataFetchOptions {
   initialData?: any[];
