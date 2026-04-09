@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -61,7 +61,7 @@ function ToolFormContent() {
     pros: '',
     cons: '',
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [toolImageFile, setToolImageFile] = useState<File | null>(null);
   const [categoryInput, setCategoryInput] = useState('');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
@@ -128,7 +128,7 @@ function ToolFormContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setLoading(true);
+    setSubmitting(true);
     try {
       const featuresArray = form.features.split(',').map((f) => f.trim()).filter(Boolean);
       const prosArray = form.pros.split(',').map((p) => p.trim()).filter(Boolean);
@@ -199,7 +199,7 @@ function ToolFormContent() {
         toast.error(toolId ? 'Failed to update tool' : 'Failed to create tool');
       }
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -263,16 +263,7 @@ function ToolFormContent() {
             <p className="text-slate-600 mt-2">Fill in the details below to {toolId ? 'update' : 'create'} your tool</p>
           </div>
 
-          {isLoadingData && (
-            <div className="mb-6 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-8">
-              <div className="text-center">
-                <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-3 border-slate-200 border-t-indigo-600"></div>
-                <p className="text-sm text-slate-600">Loading tool data...</p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-8" style={{ display: isLoadingData ? 'none' : 'block' }}>
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <h2 className="mb-6 text-xl font-semibold text-slate-900">Basic Information</h2>
               <div className="grid gap-6 md:grid-cols-2">
@@ -522,7 +513,7 @@ function ToolFormContent() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
                 {toolId ? 'Update Tool' : 'Create Tool'}
@@ -543,16 +534,5 @@ function ToolFormContent() {
 }
 
 export default function ToolFormPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
-          <p className="text-sm text-slate-600">Loading form...</p>
-        </div>
-      </div>
-    }>
-      <ToolFormContent />
-    </Suspense>
-  );
+  return <ToolFormContent />;
 }

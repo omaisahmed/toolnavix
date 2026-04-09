@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createUser, updateUser, fetchDashboardUsers, fetchSettings } from '../../lib/api';
@@ -35,7 +35,7 @@ function UserFormContent() {
     email: '',
     password: '',
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSettings().then(s => setSettings(s)).catch(() => {});
@@ -71,7 +71,7 @@ function UserFormContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
       const payload = userId ? 
         { name: form.name, email: form.email, ...(form.password && { password: form.password }) } :
@@ -88,7 +88,7 @@ function UserFormContent() {
     } catch (error) {
       toast.error(userId ? 'Failed to update user' : 'Failed to create user');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -152,16 +152,7 @@ function UserFormContent() {
             <p className="text-slate-600 mt-2">Fill in the details below to {userId ? 'update' : 'create'} a user account</p>
           </div>
 
-          {isLoadingData && (
-            <div className="mb-6 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-8">
-              <div className="text-center">
-                <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-3 border-slate-200 border-t-indigo-600"></div>
-                <p className="text-sm text-slate-600">Loading user data...</p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-8" style={{ display: isLoadingData ? 'none' : 'block' }}>
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <h2 className="mb-6 text-xl font-semibold text-slate-900">User Information</h2>
               <div className="grid gap-6 md:grid-cols-2">
@@ -206,7 +197,7 @@ function UserFormContent() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
                 {userId ? 'Update User' : 'Create User'}
@@ -227,16 +218,5 @@ function UserFormContent() {
 }
 
 export default function UserFormPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
-          <p className="text-sm text-slate-600">Loading form...</p>
-        </div>
-      </div>
-    }>
-      <UserFormContent />
-    </Suspense>
-  );
+  return <UserFormContent />;
 }

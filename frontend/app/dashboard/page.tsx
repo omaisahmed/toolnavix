@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import RichTextEditor from '../components/RichTextEditor';
@@ -199,7 +199,7 @@ const Modal = ({ isOpen, title, message, onConfirm, onCancel }: { isOpen: boolea
   );
 };
 
-const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setFormData, loading, toolImageFile, setToolImageFile }: {
+const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setFormData, submitting, toolImageFile, setToolImageFile }: {
   isOpen: boolean;
   type: 'tool' | 'category' | 'user' | null;
   mode: 'create' | 'edit';
@@ -208,7 +208,7 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
   onSubmit: (e: React.FormEvent) => void;
   formData: any;
   setFormData: (data: any) => void;
-  loading: boolean;
+  submitting: boolean;
   toolImageFile: File | null;
   setToolImageFile: (file: File | null) => void;
 }) => {
@@ -387,7 +387,7 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                <button type="submit" disabled={loading} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                   {mode === 'create' ? 'Create Tool' : 'Update Tool'}
                 </button>
               </div>
@@ -457,7 +457,7 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                <button type="submit" disabled={loading} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                   {mode === 'create' ? 'Create Category' : 'Update Category'}
                 </button>
               </div>
@@ -482,7 +482,7 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
               )}
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                <button type="submit" disabled={loading} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                   {mode === 'create' ? 'Create User' : 'Update User'}
                 </button>
               </div>
@@ -500,18 +500,21 @@ const handleLogout = () => {
 };
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-      <DashboardPageContent />
-    </Suspense>
-  );
+  return <DashboardPageContent />;
 }
 
 function DashboardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('Overview');
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<Stats>({
+    total_tools: 0,
+    total_users: 0,
+    total_views: 0,
+    trending_tools: [],
+    featured_tools: [],
+    new_tools: [],
+  });
 
   // Read tab from URL query params
   useEffect(() => {
@@ -542,6 +545,7 @@ function DashboardPageContent() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [settings, setSettings] = useState<Settings>({});
@@ -561,9 +565,12 @@ function DashboardPageContent() {
     return 'Standard';
   };
 
-  const loadData = async () => {
-    setError('');
-    setLoading(true);
+  const loadData = async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      setError('');
+      setLoading(true);
+    }
+
     try {
       const [statsData, toolsData, categoriesData, postsData, usersData, reviewsData, settingsData] = await Promise.all([
         fetchDashboardStats(),
@@ -583,9 +590,13 @@ function DashboardPageContent() {
       setReviews(reviewsData.data ?? []);
       setSettings(settingsData);
     } catch (err) {
-      setError('Failed to load dashboard. Please login as admin and refresh.');
+      if (showLoading) {
+        setError('Failed to load dashboard. Please login as admin and refresh.');
+      }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -789,7 +800,7 @@ function DashboardPageContent() {
     event.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const formData = new FormData();
@@ -809,11 +820,11 @@ function DashboardPageContent() {
       toast.success('Settings updated successfully.');
       setLogoFile(null);
       setFaviconFile(null);
-      await loadData();
+      loadData({ showLoading: false }).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Unable to update settings.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -884,19 +895,19 @@ function DashboardPageContent() {
     event.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       if (formModal.type === 'tool') {
         const plainToolDescription = stripHtml(toolForm.description);
         if (!plainToolDescription) {
           setError('Tool description is required.');
-          setLoading(false);
+          setSubmitting(false);
           return;
         }
         if (plainToolDescription.length > TOOL_DESCRIPTION_MAX) {
           setError(`Tool description must be ${TOOL_DESCRIPTION_MAX} characters or fewer.`);
-          setLoading(false);
+          setSubmitting(false);
           return;
         }
 
@@ -935,7 +946,7 @@ function DashboardPageContent() {
         const plainCategoryDescription = stripHtml(categoryForm.description);
         if (plainCategoryDescription.length > CATEGORY_DESCRIPTION_MAX) {
           setError(`Category description must be ${CATEGORY_DESCRIPTION_MAX} characters or fewer.`);
-          setLoading(false);
+          setSubmitting(false);
           return;
         }
 
@@ -968,12 +979,12 @@ function DashboardPageContent() {
         }
       }
 
-      await loadData();
       closeFormModal();
+      loadData({ showLoading: false }).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Unable to save.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -1009,7 +1020,7 @@ function DashboardPageContent() {
     event.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const payload = new FormData();
@@ -1039,12 +1050,12 @@ function DashboardPageContent() {
         toast.success('Post created successfully.');
       }
 
-      await loadData();
       clearPostForm();
+      loadData({ showLoading: false }).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Unable to save post.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -1114,24 +1125,6 @@ function DashboardPageContent() {
     return categories.filter((category) => category.name.toLowerCase().includes(query));
   }, [categories, postForm.category]);
 
-  if (error && !stats) {
-    return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="card max-w-lg text-center text-slate-700">
-          <p>{error}</p>
-          <a href="/login" className="mt-3 inline-block text-indigo-600 hover:underline">Login</a>
-        </div>
-      </main>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -1744,7 +1737,7 @@ function DashboardPageContent() {
                   <div className="flex gap-3 pt-6">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={submitting}
                       className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                     >
                       Save Settings

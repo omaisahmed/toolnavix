@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -56,7 +56,7 @@ function ContentFormContent() {
     published: false,
   });
   const [postImageFile, setPostImageFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -108,7 +108,7 @@ function ContentFormContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
       const tagsArray = form.tags.split(',').map((t) => t.trim()).filter(Boolean);
       
@@ -153,7 +153,7 @@ function ContentFormContent() {
     } catch (error) {
       toast.error(postId ? 'Failed to update post' : 'Failed to create post');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -217,16 +217,7 @@ function ContentFormContent() {
             <p className="text-slate-600 mt-2">Fill in the details below to {postId ? 'update' : 'create'} your post</p>
           </div>
 
-          {isLoadingData && (
-            <div className="mb-6 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-8">
-              <div className="text-center">
-                <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-3 border-slate-200 border-t-indigo-600"></div>
-                <p className="text-sm text-slate-600">Loading post data...</p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-8" style={{ display: isLoadingData ? 'none' : 'block' }}>
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <h2 className="mb-6 text-xl font-semibold text-slate-900">Post Information</h2>
               <div className="grid gap-6 md:grid-cols-3">
@@ -399,8 +390,8 @@ function ContentFormContent() {
             </div>
 
             <div className="flex gap-3">
-              <button type="submit" disabled={loading} className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all">
-                {loading ? 'Saving...' : postId ? 'Update Post' : 'Create Post'}
+              <button type="submit" disabled={submitting} className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all">
+                {submitting ? 'Saving...' : postId ? 'Update Post' : 'Create Post'}
               </button>
               <button
                 type="button"
@@ -418,16 +409,5 @@ function ContentFormContent() {
 }
 
 export default function ContentFormPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
-          <p className="text-sm text-slate-600">Loading form...</p>
-        </div>
-      </div>
-    }>
-      <ContentFormContent />
-    </Suspense>
-  );
+  return <ContentFormContent />;
 }
