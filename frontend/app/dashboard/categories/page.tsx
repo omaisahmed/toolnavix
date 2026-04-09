@@ -80,12 +80,21 @@ function CategoryFormContent() {
         slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       };
       
+      let response;
       if (categoryId) {
-        await updateCategory(Number(categoryId), payload);
+        response = await updateCategory(Number(categoryId), payload);
         toast.success('Category updated successfully.');
       } else {
-        await createCategory(payload);
+        response = await createCategory(payload);
         toast.success('Category created successfully.');
+      }
+      // Store the new/updated item for immediate display on dashboard
+      if (response) {
+        sessionStorage.setItem('dashboardRefreshItem', JSON.stringify({
+          type: 'category',
+          data: response,
+          timestamp: Date.now(),
+        }));
       }
       router.push('/dashboard?tab=Categories');
     } catch (error) {

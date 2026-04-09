@@ -77,12 +77,21 @@ function UserFormContent() {
         { name: form.name, email: form.email, ...(form.password && { password: form.password }) } :
         form;
       
+      let response;
       if (userId) {
-        await updateUser(Number(userId), payload);
+        response = await updateUser(Number(userId), payload);
         toast.success('User updated successfully.');
       } else {
-        await createUser(payload);
+        response = await createUser(payload);
         toast.success('User created successfully.');
+      }
+      // Store the new/updated item for immediate display on dashboard
+      if (response) {
+        sessionStorage.setItem('dashboardRefreshItem', JSON.stringify({
+          type: 'user',
+          data: response,
+          timestamp: Date.now(),
+        }));
       }
       router.push('/dashboard?tab=Users');
     } catch (error) {

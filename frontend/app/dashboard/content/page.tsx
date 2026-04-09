@@ -143,11 +143,25 @@ function ContentFormContent() {
       }
       
       if (postId) {
-        await updatePost(Number(postId), payload);
+        const response = await updatePost(Number(postId), payload);
         toast.success('Post updated successfully.');
+        if (response) {
+          sessionStorage.setItem('dashboardRefreshItem', JSON.stringify({
+            type: 'post',
+            data: response,
+            timestamp: Date.now(),
+          }));
+        }
       } else {
-        await createPost(payload);
+        const response = await createPost(payload);
         toast.success('Post created successfully.');
+        if (response) {
+          sessionStorage.setItem('dashboardRefreshItem', JSON.stringify({
+            type: 'post',
+            data: response,
+            timestamp: Date.now(),
+          }));
+        }
       }
       router.push('/dashboard?tab=Content');
     } catch (error) {

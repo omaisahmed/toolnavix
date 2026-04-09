@@ -183,12 +183,21 @@ function ToolFormContent() {
         }
       }
 
+      let response;
       if (toolId) {
-        await updateTool(Number(toolId), payload);
+        response = await updateTool(Number(toolId), payload);
         toast.success('Tool updated successfully.');
       } else {
-        await createTool(payload);
+        response = await createTool(payload);
         toast.success('Tool created successfully.');
+      }
+      // Store the new/updated item for immediate display on dashboard
+      if (response) {
+        sessionStorage.setItem('dashboardRefreshItem', JSON.stringify({
+          type: 'tool',
+          data: response,
+          timestamp: Date.now(),
+        }));
       }
       router.push('/dashboard?tab=Tools');
     } catch (error: any) {

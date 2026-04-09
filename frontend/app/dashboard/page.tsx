@@ -523,19 +523,72 @@ function DashboardPageContent() {
       setActiveTab(tabParam as Tab);
     }
   }, [searchParams]);
-  const [tools, setTools] = useState<Tool[]>([]);
+
+  // Initialize state with cached data
+  const initializeFromCache = () => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const cached = sessionStorage.getItem('dashboardCache');
+      if (cached) {
+        const data = JSON.parse(cached);
+        // Sort all data by created_at descending before returning
+        if (data.tools) {
+          data.tools.sort((a: any, b: any) => {
+            const aDate = new Date(a.created_at || 0).getTime();
+            const bDate = new Date(b.created_at || 0).getTime();
+            return bDate - aDate;
+          });
+        }
+        if (data.categories) {
+          data.categories.sort((a: any, b: any) => {
+            const aDate = new Date(a.created_at || 0).getTime();
+            const bDate = new Date(b.created_at || 0).getTime();
+            return bDate - aDate;
+          });
+        }
+        if (data.posts) {
+          data.posts.sort((a: any, b: any) => {
+            const aDate = new Date(a.published_at || a.created_at || 0).getTime();
+            const bDate = new Date(b.published_at || b.created_at || 0).getTime();
+            return bDate - aDate;
+          });
+        }
+        if (data.users) {
+          data.users.sort((a: any, b: any) => {
+            const aDate = new Date(a.created_at).getTime();
+            const bDate = new Date(b.created_at).getTime();
+            return bDate - aDate;
+          });
+        }
+        if (data.reviews) {
+          data.reviews.sort((a: any, b: any) => {
+            const aDate = new Date(a.created_at).getTime();
+            const bDate = new Date(b.created_at).getTime();
+            return bDate - aDate;
+          });
+        }
+        return data;
+      }
+    } catch (err) {
+      // Silently ignore cache errors
+    }
+    return {};
+  };
+
+  const cachedData = initializeFromCache();
+  const [tools, setTools] = useState<Tool[]>(cachedData.tools ?? []);
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [toolFilters, setToolFilters] = useState({ search: '', pricing: '', featured: false, trending: false, just_landed: false });
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(cachedData.categories ?? []);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [categoryFilters, setCategoryFilters] = useState({ search: '' });
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(cachedData.users ?? []);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [userFilters, setUserFilters] = useState({ search: '', admin: '' });
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Post[]>(cachedData.posts ?? []);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [postFilters, setPostFilters] = useState({ search: '', type: '', published: '' });
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>(cachedData.reviews ?? []);
   const [toolForm, setToolForm] = useState(defaultToolForm);
   const [categoryForm, setCategoryForm] = useState(defaultCategoryForm);
   const [userForm, setUserForm] = useState(defaultUserForm);
@@ -544,11 +597,11 @@ function DashboardPageContent() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!cachedData.tools); // Only show loading if no cached data
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [settings, setSettings] = useState<Settings>({});
+  const [settings, setSettings] = useState<Settings>(cachedData.settings ?? {});
   const [toolImageFile, setToolImageFile] = useState<File | null>(null);
   const [postImageFile, setPostImageFile] = useState<File | null>(null);
   const [isPostCategoryOpen, setIsPostCategoryOpen] = useState(false);
@@ -572,36 +625,136 @@ function DashboardPageContent() {
     }
 
     try {
-      const [statsData, toolsData, categoriesData, postsData, usersData, reviewsData, settingsData] = await Promise.all([
+      // Load critical data first (tools, categories, posts)
+      const [statsData, toolsData, categoriesData, postsData, settingsData] = await Promise.all([
         fetchDashboardStats(),
         fetchTools({ per_page: '50' }),
         fetchCategories(),
         fetchDashboardPosts({ per_page: '50' }),
-        fetchDashboardUsers(),
-        fetchDashboardReviews(),
         fetchSettings(),
       ]);
 
+      const newTools = toolsData.data ?? [];
+      const newCategories = categoriesData;
+      const newPosts = (postsData.data ?? []) as Post[];
+      const newSettings = settingsData;
+
       setStats(statsData);
-      setTools(toolsData.data ?? []);
-      setCategories(categoriesData);
-      setPosts((postsData.data ?? []) as Post[]);
-      setUsers(usersData.data ?? []);
-      setReviews(reviewsData.data ?? []);
-      setSettings(settingsData);
+      setTools(newTools);
+      setCategories(newCategories);
+      setPosts(newPosts);
+      setSettings(newSettings);
+
+      if (showLoading) {
+        setLoading(false);
+      }
+
+      // Cache the data for instant display on return
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dashboardCache', JSON.stringify({
+          tools: newTools,
+          categories: newCategories,
+          posts: newPosts,
+          settings: newSettings,
+          users: tools, // Use current state to avoid losing user data
+          reviews: reviews,
+        }));
+      }
+
+      // Load secondary data in background (users, reviews) without blocking UI
+      try {
+        const [usersData, reviewsData] = await Promise.all([
+          fetchDashboardUsers(),
+          fetchDashboardReviews(),
+        ]);
+        const newUsers = usersData.data ?? [];
+        const newReviews = (reviewsData.data ?? []).sort((a, b) => {
+          const aDate = new Date(a.created_at).getTime();
+          const bDate = new Date(b.created_at).getTime();
+          return bDate - aDate;
+        });
+        setUsers(newUsers);
+        setReviews(newReviews);
+        
+        // Update cache with users and reviews
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('dashboardCache', JSON.stringify({
+            tools: newTools,
+            categories: newCategories,
+            posts: newPosts,
+            settings: newSettings,
+            users: newUsers,
+            reviews: newReviews,
+          }));
+        }
+      } catch (err) {
+        // Silently fail for secondary data
+      }
     } catch (err) {
       if (showLoading) {
         setError('Failed to load dashboard. Please login as admin and refresh.');
-      }
-    } finally {
-      if (showLoading) {
         setLoading(false);
       }
     }
   };
 
   useEffect(() => {
-    loadData();
+    // Check for refresh item from form submission first
+    const checkRefreshItem = () => {
+      if (typeof window === 'undefined') return false;
+      
+      try {
+        const stored = sessionStorage.getItem('dashboardRefreshItem');
+        if (stored) {
+          const { type, data, timestamp } = JSON.parse(stored);
+          
+          // Only use if less than 30 seconds old
+          if (Date.now() - timestamp < 30000) {
+            // Add/update the item in local state immediately without showing loading
+            if (type === 'tool' && data) {
+              setTools(prevTools => {
+                const filtered = prevTools.filter(t => t.id !== data.id);
+                return [data, ...filtered];
+              });
+            } else if (type === 'category' && data) {
+              setCategories(prevCats => {
+                const filtered = prevCats.filter(c => c.id !== data.id);
+                return [data, ...filtered];
+              });
+            } else if (type === 'post' && data) {
+              setPosts(prevPosts => {
+                const filtered = prevPosts.filter(p => p.id !== data.id);
+                return [data, ...filtered];
+              });
+            } else if (type === 'user' && data) {
+              setUsers(prevUsers => {
+                const filtered = prevUsers.filter(u => u.id !== data.id);
+                return [data, ...filtered];
+              });
+            }
+          }
+          
+          // Clear the stored item
+          sessionStorage.removeItem('dashboardRefreshItem');
+          
+          // Refresh data in background WITHOUT showing loading spinner
+          loadData({ showLoading: false }).catch(() => {});
+          
+          return true;
+        }
+      } catch (err) {
+        // Silently ignore JSON parse errors
+      }
+      return false;
+    };
+
+    // If we have cached data and there's a refresh item, use the refresh logic
+    if (checkRefreshItem()) {
+      return;
+    }
+
+    // Otherwise, load data normally (with loading spinner only if no cache)
+    loadData({ showLoading: tools.length === 0 });
   }, []);
 
   // Filter effects
@@ -614,6 +767,12 @@ function DashboardPageContent() {
       if (toolFilters.just_landed && !tool.just_landed) return false;
       return true;
     });
+    // Sort by created_at descending (newest first)
+    filtered.sort((a, b) => {
+      const aDate = new Date((a as any).created_at || 0).getTime();
+      const bDate = new Date((b as any).created_at || 0).getTime();
+      return bDate - aDate;
+    });
     setFilteredTools(filtered);
   }, [tools, toolFilters]);
 
@@ -621,6 +780,12 @@ function DashboardPageContent() {
     const filtered = categories.filter((cat) => {
       if (categoryFilters.search && !cat.name.toLowerCase().includes(categoryFilters.search.toLowerCase())) return false;
       return true;
+    });
+    // Sort by created_at descending (newest first)
+    filtered.sort((a, b) => {
+      const aDate = new Date((a as any).created_at || 0).getTime();
+      const bDate = new Date((b as any).created_at || 0).getTime();
+      return bDate - aDate;
     });
     setFilteredCategories(filtered);
   }, [categories, categoryFilters]);
@@ -632,6 +797,12 @@ function DashboardPageContent() {
       if (userFilters.admin === 'false' && user.is_admin) return false;
       return true;
     });
+    // Sort by created_at descending (newest first)
+    filtered.sort((a, b) => {
+      const aDate = new Date(a.created_at).getTime();
+      const bDate = new Date(b.created_at).getTime();
+      return bDate - aDate;
+    });
     setFilteredUsers(filtered);
   }, [users, userFilters]);
 
@@ -642,6 +813,12 @@ function DashboardPageContent() {
       if (postFilters.published === 'true' && !post.published) return false;
       if (postFilters.published === 'false' && post.published) return false;
       return true;
+    });
+    // Sort by published_at or created_at descending (newest first)
+    filtered.sort((a, b) => {
+      const aDate = new Date((a as any).published_at || (a as any).created_at || 0).getTime();
+      const bDate = new Date((b as any).published_at || (b as any).created_at || 0).getTime();
+      return bDate - aDate;
     });
     setFilteredPosts(filtered);
   }, [posts, postFilters]);
