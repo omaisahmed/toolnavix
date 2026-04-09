@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import RichTextEditor from '../components/RichTextEditor';
 import FilterBar from '../components/FilterBar';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { stripHtml } from '../lib/richText';
 import {
   createCategory,
@@ -611,6 +612,7 @@ function DashboardPageContent() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [formModal, setFormModal] = useState<FormModalState>({ isOpen: false, type: null, mode: 'create' });
+  const [formData, setFormData] = useState<any>({});
 
   // Initialize with cache only after hydration
   useEffect(() => {
@@ -1413,102 +1415,209 @@ function DashboardPageContent() {
 
             {activeTab === 'Overview' && (
               <>
-                <section className="rounded-3xl border border-slate-200 bg-gradient-to-r from-indigo-600 to-indigo-500 p-6 text-white shadow-lg">
-                  <p className="text-sm uppercase tracking-[0.18em] text-indigo-100">Dashboard Overview</p>
-                  <h1 className="mt-2 text-3xl font-bold">Analytics Snapshot</h1>
-                  <p className="mt-2 text-sm text-indigo-100">Monitor platform growth, content quality, and catalog health in one place.</p>
+                {/* Welcome Header */}
+                <section className="rounded-3xl border border-slate-200 bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 p-8 text-white shadow-lg">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.18em] text-indigo-100">Welcome to ToolNavix Dashboard</p>
+                      <h1 className="mt-2 text-4xl font-bold">Analytics & Insights</h1>
+                      <p className="mt-3 text-base text-indigo-100 max-w-2xl">Monitor your AI tool catalog, track platform engagement, measure content performance, and optimize your marketplace in real-time.</p>
+                    </div>
+                    <div className="text-6xl opacity-20">📊</div>
+                  </div>
                 </section>
 
-                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Total Tools</p>
-                      <span className="rounded-xl bg-indigo-100 p-2 text-indigo-600">
+                {/* Primary KPI Cards */}
+                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500 font-semibold">Catalog Size</p>
+                      <span className="rounded-xl bg-indigo-100 p-3 text-indigo-600">
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3a.75.75 0 00-.75.75v16.5a.75.75 0 001.28.53l4.72-4.72h5.25a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-10.5z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.5a2 2 0 00-1 .267" />
                         </svg>
                       </span>
                     </div>
-                    <p className="mt-3 text-4xl font-bold text-slate-900">{stats.total_tools}</p>
-                    <p className="mt-1 text-xs text-slate-500">{toolsByStatus.featured.length} featured, {toolsByStatus.top.length} top</p>
-                    <button onClick={() => setActiveTab('Tools')} className="mt-4 text-sm font-semibold text-indigo-600 hover:underline">
-                      View
+                    <p className="text-4xl font-bold text-slate-900">{stats.total_tools}</p>
+                    <div className="mt-3 text-xs text-slate-600 space-y-1">
+                      <div className="flex justify-between">
+                        <span>{toolsByStatus.featured.length} Featured</span>
+                        <span>{toolsByStatus.top.length} Top Rated</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setActiveTab('Tools')} className="mt-4 inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+                      Manage Tools →
                     </button>
                   </article>
 
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Total Users</p>
-                      <span className="rounded-xl bg-emerald-100 p-2 text-emerald-600">
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500 font-semibold">Community</p>
+                      <span className="rounded-xl bg-emerald-100 p-3 text-emerald-600">
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m10-9a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a6 6 0 11-12 0 6 6 0 0112 0z" />
                         </svg>
                       </span>
                     </div>
-                    <p className="mt-3 text-4xl font-bold text-slate-900">{stats.total_users}</p>
-                    <p className="mt-1 text-xs text-slate-500">{users.filter((user) => !user.banned).length} active</p>
-                    <button onClick={() => setActiveTab('Users')} className="mt-4 text-sm font-semibold text-indigo-600 hover:underline">
-                      View
+                    <p className="text-4xl font-bold text-slate-900">{stats.total_users}</p>
+                    <div className="mt-3 text-xs text-slate-600 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-1">
+                          <span className="h-2 w-2 bg-emerald-500 rounded-full"></span>
+                          {users.filter((user) => !user.banned).length} Active
+                        </span>
+                        <span>{users.filter((user) => user.banned).length} Banned</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setActiveTab('Users')} className="mt-4 inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                      Manage Users →
                     </button>
                   </article>
 
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Total Views</p>
-                      <span className="rounded-xl bg-cyan-100 p-2 text-cyan-600">
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500 font-semibold">Engagement</p>
+                      <span className="rounded-xl bg-cyan-100 p-3 text-cyan-600">
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-                          <circle cx="12" cy="12" r="3" strokeWidth="2" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </span>
                     </div>
-                    <p className="mt-3 text-4xl font-bold text-slate-900">{stats.total_views}</p>
-                    <p className="mt-1 text-xs text-slate-500">Total tool detail visits</p>
-                    <button onClick={() => setActiveTab('Tools')} className="mt-4 text-sm font-semibold text-indigo-600 hover:underline">
-                      View
+                    <p className="text-4xl font-bold text-slate-900">{stats.total_views.toLocaleString()}</p>
+                    <div className="mt-3 text-xs text-slate-600">
+                      <span>Total tool views</span>
+                    </div>
+                    <button onClick={() => setActiveTab('Tools')} className="mt-4 inline-flex items-center text-sm font-semibold text-cyan-600 hover:text-cyan-700">
+                      View Insights →
                     </button>
                   </article>
 
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Total Categories</p>
-                      <span className="rounded-xl bg-amber-100 p-2 text-amber-600">
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500 font-semibold">Content</p>
+                      <span className="rounded-xl bg-amber-100 p-3 text-amber-600">
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h7l2 2h7v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                       </span>
                     </div>
-                    <p className="mt-3 text-4xl font-bold text-slate-900">{categories.length}</p>
-                    <p className="mt-1 text-xs text-slate-500">Taxonomy groups</p>
-                    <button onClick={() => setActiveTab('Categories')} className="mt-4 text-sm font-semibold text-indigo-600 hover:underline">
-                      View
+                    <p className="text-4xl font-bold text-slate-900">{posts.length}</p>
+                    <div className="mt-3 text-xs text-slate-600 space-y-1">
+                      <div>
+                        {posts.filter(p => p.type === 'blog').length} Blog • {posts.filter(p => p.type === 'news').length} News
+                      </div>
+                    </div>
+                    <button onClick={() => setActiveTab('Content')} className="mt-4 inline-flex items-center text-sm font-semibold text-amber-600 hover:text-amber-700">
+                      Manage Content →
                     </button>
                   </article>
                 </section>
 
-                <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+                {/* Secondary Metrics */}
+                <section className="grid gap-4 sm:grid-cols-3">
                   <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold text-slate-900">Content Mix</h2>
-                      <span className="text-xs text-slate-500">Live</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Categories</h3>
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{categories.length}</span>
                     </div>
-                    <div className="mt-5 space-y-4">
+                    <div className="space-y-2">
+                      {categories.slice(0, 5).map((cat) => (
+                        <div key={cat.id} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-700 truncate">{cat.name}</span>
+                          <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-medium">
+                            {tools.filter(t => t.category?.id === cat.id).length}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => setActiveTab('Categories')} className="mt-4 w-full py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                      View All Categories
+                    </button>
+                  </article>
+
+                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Tool Status</h3>
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{stats.total_tools}</span>
+                    </div>
+                    <div className="space-y-2">
                       {[
-                        { label: 'Top AI', value: toolsByStatus.top.length, color: 'bg-fuchsia-500' },
-                        { label: 'Featured', value: toolsByStatus.featured.length, color: 'bg-indigo-500' },
-                        { label: 'Trending', value: toolsByStatus.trending.length, color: 'bg-emerald-500' },
-                        { label: 'Just Landed', value: toolsByStatus.just_landed.length, color: 'bg-amber-500' },
+                        { label: '⭐ Top Rated', value: toolsByStatus.top.length, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50' },
+                        { label: '✨ Featured', value: toolsByStatus.featured.length, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { label: '🔥 Trending', value: toolsByStatus.trending.length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                        { label: '🆕 Just Landed', value: toolsByStatus.just_landed.length, color: 'text-amber-600', bg: 'bg-amber-50' },
+                      ].map((item) => (
+                        <div key={item.label} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-700">{item.label}</span>
+                          <span className={`font-semibold ${item.color} ${item.bg} px-2 py-1 rounded`}>
+                            {item.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Platform Health</h3>
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">Healthy</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-slate-600">Catalog Completeness</span>
+                          <span className="font-semibold text-slate-900">{Math.min(100, Math.round((stats.total_tools / 50) * 100))}%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-indigo-500" style={{width: `${Math.min(100, Math.round((stats.total_tools / 50) * 100))}%`}}></div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-slate-600">Content Coverage</span>
+                          <span className="font-semibold text-slate-900">{Math.round((posts.length / 20) * 100)}%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500" style={{width: `${Math.round((posts.length / 20) * 100)}%`}}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                </section>
+
+                {/* Main Content Grid */}
+                <section className="grid gap-4 lg:grid-cols-3">
+                  {/* Content Mix Chart */}
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-lg font-semibold text-slate-900">Catalog Distribution</h2>
+                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Real-time</span>
+                    </div>
+                    <div className="space-y-4">
+                      {[
+                        { label: '⭐ Top AI Tools', value: toolsByStatus.top.length, color: 'bg-gradient-to-r from-fuchsia-500 to-pink-500', description: 'Highest rated tools' },
+                        { label: '✨ Featured', value: toolsByStatus.featured.length, color: 'bg-gradient-to-r from-indigo-500 to-blue-500', description: 'Promoted tools' },
+                        { label: '🔥 Trending', value: toolsByStatus.trending.length, color: 'bg-gradient-to-r from-emerald-500 to-teal-500', description: 'Currently popular' },
+                        { label: '🆕 Just Landed', value: toolsByStatus.just_landed.length, color: 'bg-gradient-to-r from-amber-500 to-orange-500', description: 'Newly added' },
                       ].map((item) => {
                         const max = Math.max(1, stats.total_tools);
                         const width = Math.max(6, Math.round((item.value / max) * 100));
+                        const percentage = Math.round((item.value / Math.max(1, stats.total_tools)) * 100);
                         return (
                           <div key={item.label}>
-                            <div className="mb-1 flex items-center justify-between text-sm text-slate-600">
-                              <span>{item.label}</span>
-                              <span className="font-semibold text-slate-900">{item.value}</span>
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <p className="text-sm font-medium text-slate-900">{item.label}</p>
+                                <p className="text-xs text-slate-500">{item.description}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-base font-bold text-slate-900">{item.value}</p>
+                                <p className="text-xs text-slate-500">{percentage}%</p>
+                              </div>
                             </div>
-                            <div className="h-2.5 rounded-full bg-slate-100">
-                              <div className={`h-2.5 rounded-full ${item.color}`} style={{ width: `${width}%` }} />
+                            <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+                              <div className={`h-full ${item.color}`} style={{ width: `${width}%` }} />
                             </div>
                           </div>
                         );
@@ -1516,23 +1625,113 @@ function DashboardPageContent() {
                     </div>
                   </article>
 
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold text-slate-900">Top Lists</h2>
-                    <div className="mt-4 space-y-4">
-                      <div>
-                        <h3 className="text-xs uppercase tracking-[0.16em] text-slate-500">Trending Tools</h3>
-                        <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                          {stats.trending_tools.slice(0, 4).map((tool) => <li key={tool.id}>{tool.name}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <h3 className="text-xs uppercase tracking-[0.16em] text-slate-500">New Tools</h3>
-                        <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                          {stats.new_tools.slice(0, 4).map((tool) => <li key={tool.id}>{tool.name}</li>)}
-                        </ul>
-                      </div>
+                  {/* Quick Actions */}
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
+                    <div className="space-y-3">
+                      <button 
+                        onClick={() => setFormModal({isOpen: true, type: 'tool', mode: 'create'})}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition font-medium text-sm"
+                      >
+                        <span className="text-lg">➕</span>
+                        <span>Add New Tool</span>
+                      </button>
+                      <button 
+                        onClick={() => setFormModal({isOpen: true, type: 'post', mode: 'create'})}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition font-medium text-sm"
+                      >
+                        <span className="text-lg">✍️</span>
+                        <span>Write Content</span>
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('Categories')}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition font-medium text-sm"
+                      >
+                        <span className="text-lg">📂</span>
+                        <span>Manage Categories</span>
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('Tools')}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition font-medium text-sm"
+                      >
+                        <span className="text-lg">📊</span>
+                        <span>View All Tools</span>
+                      </button>
                     </div>
                   </article>
+                </section>
+
+                {/* Recent Activity & Featured Lists */}
+                <section className="grid gap-4 lg:grid-cols-2">
+                  {/* Trending Tools */}
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold text-slate-900">🔥 Trending Now</h2>
+                      <button onClick={() => setActiveTab('Tools')} className="text-xs font-semibold text-indigo-600 hover:underline">
+                        View All →
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {stats.trending_tools.slice(0, 6).map((tool, idx) => (
+                        <div key={tool.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/tools?id=${tool.id}`)}>
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 text-white font-bold text-sm">
+                            {idx + 1}
+                          </span>
+                          <span className="flex-1 text-sm font-medium text-slate-900 truncate">{tool.name}</span>
+                          <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Popular</span>
+                        </div>
+                      ))}
+                      {stats.trending_tools.length === 0 && (
+                        <p className="text-sm text-slate-500 text-center py-4">No trending tools yet</p>
+                      )}
+                    </div>
+                  </article>
+
+                  {/* New Tools */}
+                  <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold text-slate-900">🆕 Recently Added</h2>
+                      <button onClick={() => setActiveTab('Tools')} className="text-xs font-semibold text-emerald-600 hover:underline">
+                        View All →
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {stats.new_tools.slice(0, 6).map((tool, idx) => (
+                        <div key={tool.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/tools?id=${tool.id}`)}>
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold text-sm">
+                            {idx + 1}
+                          </span>
+                          <span className="flex-1 text-sm font-medium text-slate-900 truncate">{tool.name}</span>
+                          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">New</span>
+                        </div>
+                      ))}
+                      {stats.new_tools.length === 0 && (
+                        <p className="text-sm text-slate-500 text-center py-4">No new tools yet</p>
+                      )}
+                    </div>
+                  </article>
+                </section>
+
+                {/* Content Stats */}
+                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-6">📝 Content Overview</h2>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
+                      <p className="text-xs uppercase tracking-[0.12em] text-blue-600 font-semibold mb-2">Blog Posts</p>
+                      <p className="text-3xl font-bold text-blue-900">{posts.filter(p => p.type === 'blog').length}</p>
+                      <p className="text-xs text-blue-700 mt-2">{posts.filter(p => p.type === 'blog' && p.published).length} published</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
+                      <p className="text-xs uppercase tracking-[0.12em] text-amber-600 font-semibold mb-2">AI News</p>
+                      <p className="text-3xl font-bold text-amber-900">{posts.filter(p => p.type === 'news').length}</p>
+                      <p className="text-xs text-amber-700 mt-2">{posts.filter(p => p.type === 'news' && p.published).length} published</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+                      <p className="text-xs uppercase tracking-[0.12em] text-emerald-600 font-semibold mb-2">Guides</p>
+                      <p className="text-3xl font-bold text-emerald-900">{posts.filter(p => p.type === 'guide').length}</p>
+                      <p className="text-xs text-emerald-700 mt-2">{posts.filter(p => p.type === 'guide' && p.published).length} published</p>
+                    </div>
+                  </div>
                 </section>
               </>
             )}
@@ -1962,6 +2161,30 @@ function DashboardPageContent() {
           </div>
         </main>
       </div>
+
+      {/* Form Modal */}
+      <FormModal
+        isOpen={formModal.isOpen}
+        type={formModal.type}
+        mode={formModal.mode}
+        data={formModal.data}
+        onClose={closeFormModal}
+        onSubmit={handleFormSubmit}
+        formData={formData}
+        setFormData={setFormData}
+        submitting={submitting}
+        toolImageFile={toolImageFile}
+        setToolImageFile={setToolImageFile}
+      />
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.onConfirm}
+        onCancel={() => setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+      />
     </>
   );
 }
