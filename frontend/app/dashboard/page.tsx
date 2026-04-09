@@ -166,7 +166,7 @@ type ModalState = {
 
 type FormModalState = {
   isOpen: boolean;
-  type: 'tool' | 'category' | 'user' | null;
+  type: 'tool' | 'category' | 'user' | 'post' | null;
   mode: 'create' | 'edit';
   data?: any;
 };
@@ -185,9 +185,9 @@ type Settings = {
   hero_tag_3?: string | null;
 };
 
-const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setFormData, submitting, toolImageFile, setToolImageFile }: {
+const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setFormData, submitting, imageFile, setImageFile }: {
   isOpen: boolean;
-  type: 'tool' | 'category' | 'user' | null;
+  type: 'tool' | 'category' | 'user' | 'post' | null;
   mode: 'create' | 'edit';
   data?: any;
   onClose: () => void;
@@ -195,12 +195,12 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
   formData: any;
   setFormData: (data: any) => void;
   submitting: boolean;
-  toolImageFile: File | null;
-  setToolImageFile: (file: File | null) => void;
+  imageFile: File | null;
+  setImageFile: (file: File | null) => void;
 }) => {
   if (!isOpen || !type) return null;
 
-  const title = mode === 'create' ? `Create ${type === 'tool' ? 'Tool' : type === 'category' ? 'Category' : 'User'}` : `Edit ${type === 'tool' ? 'Tool' : type === 'category' ? 'Category' : 'User'}`;
+  const title = mode === 'create' ? `Create ${type === 'tool' ? 'Tool' : type === 'category' ? 'Category' : type === 'user' ? 'User' : 'Post'}` : `Edit ${type === 'tool' ? 'Tool' : type === 'category' ? 'Category' : type === 'user' ? 'User' : 'Post'}`;
   const descriptionEditorRef = useRef<HTMLTextAreaElement | null>(null);
   const insertDescriptionLine = (_line: string) => {};
   const insertDescriptionText = (_before: string, _after = '', _placeholder = '') => {};
@@ -260,14 +260,14 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
               <div>
                 <label className="text-sm font-medium text-slate-700">Tool Image</label>
                 <div className="mt-2 flex items-center gap-4">
-                  {formData.logo && !toolImageFile && (
+                  {formData.logo && !imageFile && (
                     <div className="h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-white">
                       <img src={formData.logo} alt={`${formData.name} preview`} className="h-full w-full object-cover" />
                     </div>
                   )}
-                  {toolImageFile && (
+                  {imageFile && (
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      {toolImageFile.name}
+                      {imageFile.name}
                     </div>
                   )}
                   <input
@@ -275,7 +275,7 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
                     accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
-                      setToolImageFile(file);
+                      setImageFile(file);
                       if (file) {
                         setFormData({ ...formData, remove_logo: false });
                       }
@@ -288,7 +288,7 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
                     type="button"
                     onClick={() => {
                       setFormData({ ...formData, logo: '', remove_logo: true });
-                      setToolImageFile(null);
+                      setImageFile(null);
                     }}
                     className="mt-2 text-sm text-rose-600 hover:underline"
                   >
@@ -470,6 +470,114 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
                 <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
                 <button type="submit" disabled={submitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                   {mode === 'create' ? 'Create User' : 'Update User'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {type === 'post' && (
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Title</label>
+                  <input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" required />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Slug</label>
+                  <input value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" placeholder="Leave empty to auto-generate" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Type</label>
+                  <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2">
+                    <option value="blog">Blog</option>
+                    <option value="news">News</option>
+                    <option value="guide">Guide</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Category</label>
+                  <input value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" placeholder="Optional category" />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Tags (comma separated)</label>
+                <input value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Excerpt</label>
+                <textarea value={formData.excerpt} onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" rows={3} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Featured Image</label>
+                <div className="mt-2 flex items-center gap-4">
+                  {formData.image && !imageFile && (
+                    <div className="h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                      <img src={formData.image} alt={`${formData.title} preview`} className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                  {imageFile && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      {imageFile.name}
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setImageFile(file);
+                      if (file) {
+                        setFormData({ ...formData, remove_image: false });
+                      }
+                    }}
+                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
+                  />
+                </div>
+                {formData.image && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, image: '', remove_image: true });
+                      setImageFile(null);
+                    }}
+                    className="mt-2 text-sm text-rose-600 hover:underline"
+                  >
+                    Remove current image
+                  </button>
+                )}
+                <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Content</label>
+                <RichTextEditor
+                  value={formData.content || ''}
+                  onChange={(nextValue) => setFormData({ ...formData, content: nextValue })}
+                  minHeightClassName="min-h-[200px]"
+                  placeholder="Write your content here..."
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Meta Title</label>
+                  <input value={formData.meta_title} onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Meta Description</label>
+                  <input value={formData.meta_description} onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-3 text-sm text-slate-700">
+                  <input type="checkbox" checked={formData.published} onChange={(e) => setFormData({ ...formData, published: e.target.checked })} />
+                  Published
+                </label>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button type="submit" disabled={submitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                  {mode === 'create' ? 'Create Post' : 'Update Post'}
                 </button>
               </div>
             </form>
@@ -1032,26 +1140,34 @@ function DashboardPageContent() {
     }
   };
 
-  const openCreateModal = (type: 'tool' | 'category' | 'user') => {
+  const openCreateModal = (type: 'tool' | 'category' | 'user' | 'post') => {
     if (type === 'tool') {
       setToolForm(defaultToolForm);
+      setFormData(defaultToolForm);
       setSelectedTool(null);
       setToolImageFile(null);
     } else if (type === 'category') {
       setCategoryForm(defaultCategoryForm);
+      setFormData(defaultCategoryForm);
       setSelectedCategory(null);
     } else if (type === 'user') {
       setUserForm(defaultUserForm);
+      setFormData(defaultUserForm);
       setSelectedUser(null);
+    } else if (type === 'post') {
+      setPostForm(defaultPostForm);
+      setFormData(defaultPostForm);
+      setSelectedPost(null);
+      setPostImageFile(null);
     }
     setFormModal({ isOpen: true, type, mode: 'create', data: { categories } });
   };
 
-  const openEditModal = (type: 'tool' | 'category' | 'user', item: any) => {
+  const openEditModal = (type: 'tool' | 'category' | 'user' | 'post', item: any) => {
     if (type === 'tool') {
       setSelectedTool(item);
       setToolImageFile(null);
-      setToolForm({
+      setFormData({
         name: item.name,
         slug: item.slug,
         description: item.description,
@@ -1071,7 +1187,7 @@ function DashboardPageContent() {
       });
     } else if (type === 'category') {
       setSelectedCategory(item);
-      setCategoryForm({
+      setFormData({
         name: item.name,
         slug: item.slug,
         description: item.description ?? '',
@@ -1079,11 +1195,29 @@ function DashboardPageContent() {
       });
     } else if (type === 'user') {
       setSelectedUser(item);
-      setUserForm({
+      setFormData({
         name: item.name,
         email: item.email,
         password: '',
       });
+    } else if (type === 'post') {
+      setSelectedPost(item);
+      setFormData({
+        title: item.title,
+        slug: item.slug,
+        type: item.type,
+        category: item.category || '',
+        tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
+        excerpt: item.excerpt || '',
+        image: item.image || '',
+        remove_image: false,
+        content: item.content || '',
+        meta_title: item.meta_title || '',
+        meta_description: item.meta_description || '',
+        published: Boolean(item.published),
+        published_at: item.published_at ? String(item.published_at).slice(0, 16) : '',
+      });
+      setPostImageFile(null);
     }
     setFormModal({ isOpen: true, type, mode: 'edit', data: { categories } });
   };
@@ -1093,6 +1227,7 @@ function DashboardPageContent() {
     clearToolForm();
     clearCategoryForm();
     clearUserForm();
+    clearPostForm();
   };
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -1103,7 +1238,7 @@ function DashboardPageContent() {
 
     try {
       if (formModal.type === 'tool') {
-        const plainToolDescription = stripHtml(toolForm.description);
+        const plainToolDescription = stripHtml(formData.description);
         if (!plainToolDescription) {
           setError('Tool description is required.');
           setSubmitting(false);
@@ -1116,20 +1251,20 @@ function DashboardPageContent() {
         }
 
         const payload = new FormData();
-        payload.append('name', toolForm.name);
-        payload.append('slug', toolForm.slug);
-        payload.append('description', toolForm.description);
-        payload.append('category_id', String(Number(toolForm.category_id)));
-        payload.append('pricing', toolForm.pricing);
-        payload.append('rating', String(parseFloat(toolForm.rating) || 0));
-        payload.append('visit_url', toolForm.visit_url);
-        payload.append('featured', toolForm.featured ? '1' : '0');
-        payload.append('trending', toolForm.trending ? '1' : '0');
-        payload.append('just_landed', toolForm.just_landed ? '1' : '0');
-        payload.append('is_top', toolForm.is_top ? '1' : '0');
-        payload.append('features', JSON.stringify(parseCsv(toolForm.features)));
-        payload.append('pros', JSON.stringify(parseCsv(toolForm.pros)));
-        payload.append('cons', JSON.stringify(parseCsv(toolForm.cons)));
+        payload.append('name', formData.name);
+        payload.append('slug', formData.slug);
+        payload.append('description', formData.description);
+        payload.append('category_id', String(Number(formData.category_id)));
+        payload.append('pricing', formData.pricing);
+        payload.append('rating', String(parseFloat(formData.rating) || 0));
+        payload.append('visit_url', formData.visit_url);
+        payload.append('featured', formData.featured ? '1' : '0');
+        payload.append('trending', formData.trending ? '1' : '0');
+        payload.append('just_landed', formData.just_landed ? '1' : '0');
+        payload.append('is_top', formData.is_top ? '1' : '0');
+        payload.append('features', JSON.stringify(parseCsv(formData.features)));
+        payload.append('pros', JSON.stringify(parseCsv(formData.pros)));
+        payload.append('cons', JSON.stringify(parseCsv(formData.cons)));
 
         if (toolImageFile) {
           payload.append('logo', toolImageFile);
@@ -1147,7 +1282,7 @@ function DashboardPageContent() {
           toast.success('Tool created successfully.');
         }
       } else if (formModal.type === 'category') {
-        const plainCategoryDescription = stripHtml(categoryForm.description);
+        const plainCategoryDescription = stripHtml(formData.description);
         if (plainCategoryDescription.length > CATEGORY_DESCRIPTION_MAX) {
           setError(`Category description must be ${CATEGORY_DESCRIPTION_MAX} characters or fewer.`);
           setSubmitting(false);
@@ -1155,10 +1290,10 @@ function DashboardPageContent() {
         }
 
         const payload = {
-          name: categoryForm.name,
-          slug: categoryForm.slug,
-          description: categoryForm.description,
-          icon: categoryForm.icon || null,
+          name: formData.name,
+          slug: formData.slug,
+          description: formData.description,
+          icon: formData.icon || null,
         };
 
         if (formModal.mode === 'edit' && selectedCategory) {
@@ -1170,16 +1305,43 @@ function DashboardPageContent() {
         }
       } else if (formModal.type === 'user') {
         const payload = {
-          name: userForm.name,
-          email: userForm.email,
+          name: formData.name,
+          email: formData.email,
         };
 
         if (formModal.mode === 'create') {
-          await createUser({ ...payload, password: userForm.password });
+          await createUser({ ...payload, password: formData.password });
           toast.success('User created successfully.');
         } else if (formModal.mode === 'edit' && selectedUser) {
           await updateUser(selectedUser.id, payload);
           toast.success('User updated successfully.');
+        }
+      } else if (formModal.type === 'post') {
+        const payload = new FormData();
+        payload.append('title', formData.title);
+        payload.append('slug', formData.slug || '');
+        payload.append('type', formData.type);
+        payload.append('category', formData.category || '');
+        payload.append('tags', JSON.stringify(parseCsv(formData.tags)));
+        payload.append('excerpt', formData.excerpt || '');
+        payload.append('content', formData.content);
+        payload.append('meta_title', formData.meta_title || '');
+        payload.append('meta_description', formData.meta_description || '');
+        payload.append('published', formData.published ? '1' : '0');
+        payload.append('published_at', formData.published_at || '');
+        if (postImageFile) {
+          payload.append('image', postImageFile);
+        }
+        if (formData.remove_image) {
+          payload.append('remove_image', '1');
+        }
+
+        if (selectedPost) {
+          await updatePost(selectedPost.id, payload);
+          toast.success('Post updated successfully.');
+        } else {
+          await createPost(payload);
+          toast.success('Post created successfully.');
         }
       }
 
@@ -1612,14 +1774,14 @@ function DashboardPageContent() {
                     <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
                     <div className="space-y-3">
                       <button 
-                        onClick={() => setFormModal({isOpen: true, type: 'tool', mode: 'create'})}
+                        onClick={() => router.push('/dashboard/tools')}
                         className="w-full flex items-center gap-3 p-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition font-medium text-sm"
                       >
                         <span className="text-lg">➕</span>
                         <span>Add New Tool</span>
                       </button>
                       <button 
-                        onClick={() => setFormModal({isOpen: true, type: 'post', mode: 'create'})}
+                        onClick={() => router.push('/dashboard/content')}
                         className="w-full flex items-center gap-3 p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition font-medium text-sm"
                       >
                         <span className="text-lg">✍️</span>
@@ -2155,8 +2317,8 @@ function DashboardPageContent() {
         formData={formData}
         setFormData={setFormData}
         submitting={submitting}
-        toolImageFile={toolImageFile}
-        setToolImageFile={setToolImageFile}
+        imageFile={formModal.type === 'post' ? postImageFile : toolImageFile}
+        setImageFile={formModal.type === 'post' ? setPostImageFile : setToolImageFile}
       />
 
       {/* Confirm Modal */}

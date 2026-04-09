@@ -193,7 +193,7 @@ function ContentFormContent() {
               key={tab}
               onClick={() => router.push(`/dashboard?tab=${tab}`)}
               className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                tab === 'Content' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
+                tab === 'Content' ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
               {tab}
