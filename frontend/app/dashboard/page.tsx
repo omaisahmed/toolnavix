@@ -185,22 +185,6 @@ type Settings = {
   hero_tag_3?: string | null;
 };
 
-const Modal = ({ isOpen, title, message, onConfirm, onCancel }: { isOpen: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="rounded-2xl bg-white p-6 shadow-lg max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
-        <div className="mt-4 flex gap-3">
-          <button onClick={onCancel} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">Delete</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setFormData, submitting, toolImageFile, setToolImageFile }: {
   isOpen: boolean;
   type: 'tool' | 'category' | 'user' | null;
@@ -674,6 +658,11 @@ function DashboardPageContent() {
     if (cachedData.users) setUsers(cachedData.users);
     if (cachedData.reviews) setReviews(cachedData.reviews);
     if (cachedData.settings) setSettings(cachedData.settings);
+
+    // If we have cached data, set loading to false initially
+    if (cachedData.tools) {
+      setLoading(false);
+    }
 
     // If we have cached data and there's a refresh item, use the refresh logic
     if (checkRefreshItem()) {
@@ -1351,13 +1340,6 @@ function DashboardPageContent() {
             color: '#ffffff',
           },
         }}
-      />
-      <Modal
-        isOpen={modal.isOpen}
-        title={modal.title}
-        message={modal.message}
-        onConfirm={modal.onConfirm}
-        onCancel={() => setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
       />
       <div className="flex min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white">
         {/* Sidebar */}
