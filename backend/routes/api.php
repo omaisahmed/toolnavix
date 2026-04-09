@@ -59,6 +59,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/dashboard/users', [AdminController::class, 'storeUser']);
     Route::put('/dashboard/users/{user}', [AdminController::class, 'updateUser']);
     Route::post('/dashboard/users/{user}/ban', [AdminController::class, 'banUser']);
+    Route::delete('/dashboard/users/{user}', [AdminController::class, 'deleteUser']);
     Route::get('/dashboard/reviews', [AdminController::class, 'reviews']);
     Route::post('/dashboard/reviews/{review}/approve', [AdminController::class, 'approveReview']);
     Route::delete('/dashboard/reviews/{review}', [AdminController::class, 'deleteReview']);

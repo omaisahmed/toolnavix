@@ -154,6 +154,10 @@ export async function banUser(userId: number) {
   return authFetch(`${API_BASE}/dashboard/users/${userId}/ban`, { method: 'POST' });
 }
 
+export async function deleteUser(userId: number) {
+  return authFetch(`${API_BASE}/dashboard/users/${userId}`, { method: 'DELETE' });
+}
+
 export async function updateUser(userId: number, payload: Record<string, unknown>) {
   return authFetch(`${API_BASE}/dashboard/users/${userId}`, { method: 'PUT', body: JSON.stringify(payload) });
 }

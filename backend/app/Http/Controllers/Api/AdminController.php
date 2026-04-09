@@ -70,7 +70,21 @@ class AdminController extends Controller
 
         $user->forceFill(['banned' => true])->save();
 
-        return response()->json(['message' => 'User deleted']);
+        return response()->json(['message' => 'User banned']);
+    }
+
+    public function deleteUser(User $user)
+    {
+        $this->authorize('admin');
+
+        // Prevent deleting the last admin
+        if ($user->is_admin && User::where('is_admin', true)->count() === 1) {
+            return response()->json(['message' => 'Cannot delete the last admin user'], 400);
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted successfully']);
     }
 
     public function reviews()

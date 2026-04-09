@@ -13,6 +13,7 @@ import {
   deleteCategory,
   deleteReview,
   deleteTool,
+  deleteUser,
   fetchCategories,
   fetchDashboardReviews,
   fetchDashboardStats,
@@ -927,8 +928,8 @@ function DashboardPageContent() {
   const handleBanUser = async (userId: number) => {
     setModal({
       isOpen: true,
-      title: 'Delete User',
-      message: 'Are you sure you want to delete this user?',
+      title: 'Ban User',
+      message: 'Are you sure you want to ban this user? They will not be able to access their account.',
       onConfirm: async () => {
         setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
         setError('');
@@ -936,6 +937,29 @@ function DashboardPageContent() {
         setLoading(true);
         try {
           await banUser(userId);
+          toast.success('User banned successfully.');
+          await loadData();
+        } catch (err: any) {
+          setError(err.message || 'Unable to ban user.');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    setModal({
+      isOpen: true,
+      title: 'Delete User',
+      message: 'Are you sure you want to permanently delete this user? This action cannot be undone.',
+      onConfirm: async () => {
+        setModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+          await deleteUser(userId);
           toast.success('User deleted successfully.');
           await loadData();
         } catch (err: any) {
@@ -1731,7 +1755,7 @@ function DashboardPageContent() {
                           <td className="px-4 py-3 space-x-2">
                             <button onClick={() => router.push(`/dashboard/users?id=${user.id}`)} className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</button>
                             {!user.is_admin && (
-                              <button disabled={user.banned} onClick={() => handleBanUser(user.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                              <button onClick={() => handleDeleteUser(user.id)} className="rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-700 hover:bg-rose-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
                                 Delete
                               </button>
                             )}
