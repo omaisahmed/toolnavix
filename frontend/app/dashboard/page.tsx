@@ -576,19 +576,20 @@ function DashboardPageContent() {
   };
 
   const cachedData = initializeFromCache();
-  const [tools, setTools] = useState<Tool[]>(cachedData.tools ?? []);
+  const [hydrated, setHydrated] = useState(false);
+  const [tools, setTools] = useState<Tool[]>([]);
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [toolFilters, setToolFilters] = useState({ search: '', pricing: '', featured: false, trending: false, just_landed: false });
-  const [categories, setCategories] = useState<Category[]>(cachedData.categories ?? []);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [categoryFilters, setCategoryFilters] = useState({ search: '' });
-  const [users, setUsers] = useState<User[]>(cachedData.users ?? []);
+  const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [userFilters, setUserFilters] = useState({ search: '', admin: '' });
-  const [posts, setPosts] = useState<Post[]>(cachedData.posts ?? []);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [postFilters, setPostFilters] = useState({ search: '', type: '', published: '' });
-  const [reviews, setReviews] = useState<any[]>(cachedData.reviews ?? []);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [toolForm, setToolForm] = useState(defaultToolForm);
   const [categoryForm, setCategoryForm] = useState(defaultCategoryForm);
   const [userForm, setUserForm] = useState(defaultUserForm);
@@ -597,11 +598,11 @@ function DashboardPageContent() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(!cachedData.tools); // Only show loading if no cached data
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [settings, setSettings] = useState<Settings>(cachedData.settings ?? {});
+  const [settings, setSettings] = useState<Settings>({});
   const [toolImageFile, setToolImageFile] = useState<File | null>(null);
   const [postImageFile, setPostImageFile] = useState<File | null>(null);
   const [isPostCategoryOpen, setIsPostCategoryOpen] = useState(false);
@@ -609,6 +610,76 @@ function DashboardPageContent() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [formModal, setFormModal] = useState<FormModalState>({ isOpen: false, type: null, mode: 'create' });
+
+  // Initialize with cache only after hydration
+  useEffect(() => {
+    setHydrated(true);
+    
+    // Check for refresh item from form submission first
+    const checkRefreshItem = () => {
+      if (typeof window === 'undefined') return false;
+      
+      try {
+        const stored = sessionStorage.getItem('dashboardRefreshItem');
+        if (stored) {
+          const { type, data, timestamp } = JSON.parse(stored);
+          
+          // Only use if less than 30 seconds old
+          if (Date.now() - timestamp < 30000) {
+            // Add/update the item in local state immediately without showing loading
+            if (type === 'tool' && data) {
+              setTools(prevTools => {
+                const filtered = prevTools.filter(t => t.id !== data.id);
+                return [data, ...filtered];
+              });
+            } else if (type === 'category' && data) {
+              setCategories(prevCats => {
+                const filtered = prevCats.filter(c => c.id !== data.id);
+                return [data, ...filtered];
+              });
+            } else if (type === 'post' && data) {
+              setPosts(prevPosts => {
+                const filtered = prevPosts.filter(p => p.id !== data.id);
+                return [data, ...filtered];
+              });
+            } else if (type === 'user' && data) {
+              setUsers(prevUsers => {
+                const filtered = prevUsers.filter(u => u.id !== data.id);
+                return [data, ...filtered];
+              });
+            }
+          }
+          
+          // Clear the stored item
+          sessionStorage.removeItem('dashboardRefreshItem');
+          
+          // Refresh data in background WITHOUT showing loading spinner
+          loadData({ showLoading: false }).catch(() => {});
+          
+          return true;
+        }
+      } catch (err) {
+        // Silently ignore JSON parse errors
+      }
+      return false;
+    };
+
+    // Load cached data first
+    if (cachedData.tools) setTools(cachedData.tools);
+    if (cachedData.categories) setCategories(cachedData.categories);
+    if (cachedData.posts) setPosts(cachedData.posts);
+    if (cachedData.users) setUsers(cachedData.users);
+    if (cachedData.reviews) setReviews(cachedData.reviews);
+    if (cachedData.settings) setSettings(cachedData.settings);
+
+    // If we have cached data and there's a refresh item, use the refresh logic
+    if (checkRefreshItem()) {
+      return;
+    }
+
+    // Otherwise, load data normally (with loading spinner only if no cache)
+    loadData({ showLoading: !cachedData.tools });
+  }, []);
 
   const statusText = (tool: Tool) => {
     if (tool.is_top) return 'Top AI';
@@ -697,65 +768,6 @@ function DashboardPageContent() {
       }
     }
   };
-
-  useEffect(() => {
-    // Check for refresh item from form submission first
-    const checkRefreshItem = () => {
-      if (typeof window === 'undefined') return false;
-      
-      try {
-        const stored = sessionStorage.getItem('dashboardRefreshItem');
-        if (stored) {
-          const { type, data, timestamp } = JSON.parse(stored);
-          
-          // Only use if less than 30 seconds old
-          if (Date.now() - timestamp < 30000) {
-            // Add/update the item in local state immediately without showing loading
-            if (type === 'tool' && data) {
-              setTools(prevTools => {
-                const filtered = prevTools.filter(t => t.id !== data.id);
-                return [data, ...filtered];
-              });
-            } else if (type === 'category' && data) {
-              setCategories(prevCats => {
-                const filtered = prevCats.filter(c => c.id !== data.id);
-                return [data, ...filtered];
-              });
-            } else if (type === 'post' && data) {
-              setPosts(prevPosts => {
-                const filtered = prevPosts.filter(p => p.id !== data.id);
-                return [data, ...filtered];
-              });
-            } else if (type === 'user' && data) {
-              setUsers(prevUsers => {
-                const filtered = prevUsers.filter(u => u.id !== data.id);
-                return [data, ...filtered];
-              });
-            }
-          }
-          
-          // Clear the stored item
-          sessionStorage.removeItem('dashboardRefreshItem');
-          
-          // Refresh data in background WITHOUT showing loading spinner
-          loadData({ showLoading: false }).catch(() => {});
-          
-          return true;
-        }
-      } catch (err) {
-        // Silently ignore JSON parse errors
-      }
-      return false;
-    };
-
-    // If we have cached data and there's a refresh item, use the refresh logic
-    if (checkRefreshItem()) {
-      return;
-    }
-
-    // Otherwise, load data normally (with loading spinner only if no cache)
-    loadData({ showLoading: tools.length === 0 });
-  }, []);
 
   // Filter effects
   useEffect(() => {
