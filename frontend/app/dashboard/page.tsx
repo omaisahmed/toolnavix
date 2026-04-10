@@ -2286,7 +2286,7 @@ function DashboardPageContent() {
                         </th>
                         <th className="px-4 py-3">Post</th>
                         <th className="px-4 py-3">Type</th>
-                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Category</th>
                         <th className="px-4 py-3">Published</th>
                         <th className="px-4 py-3">Actions</th>
                       </tr>

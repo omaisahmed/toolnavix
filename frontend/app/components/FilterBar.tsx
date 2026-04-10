@@ -47,19 +47,10 @@ export default function FilterBar({ filters, onFilterChange, config, onAddNew, a
             className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900"
           >
             <i className={`bi bi-funnel transition ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
-            Filters {hasActiveFilters && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">Active</span>}
+            Filters
           </button>
         </div>
         <div className="flex items-center gap-2">
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-xs font-medium text-slate-600 hover:text-slate-900"
-            >
-              Clear all
-            </button>
-          )}
           {onAddNew && (
             <button type="button" onClick={onAddNew} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">
               <i className="bi bi-plus-lg" aria-hidden="true" />
@@ -110,6 +101,21 @@ export default function FilterBar({ filters, onFilterChange, config, onAddNew, a
               )}
             </div>
           ))}
+          <div className="flex items-center gap-2 mt-auto">
+          <button
+            type="button"
+            onClick={handleReset}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+              hasActiveFilters
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            }`}
+            disabled={!hasActiveFilters}
+          >
+            <i className="bi bi-arrow-counterclockwise" aria-hidden="true" />
+            Reset
+          </button>
+          </div>
         </div>
       )}
     </div>

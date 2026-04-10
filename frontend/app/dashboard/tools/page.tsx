@@ -9,8 +9,8 @@ import { createTool, updateTool, fetchTools, fetchSettings, fetchCategories } fr
 type Tool = {
   id: number;
   name: string;
-  slug: string;
-  description: string;
+  slug: string | null;
+  description: string | null;
   pricing: string;
   rating: number;
   category: { id: number; name: string };
@@ -18,7 +18,7 @@ type Tool = {
   trending: boolean;
   just_landed: boolean;
   is_top?: boolean;
-  visit_url: string;
+  visit_url: string | null;
   logo?: string | null;
   features?: string[];
   pros?: string[];
@@ -91,12 +91,12 @@ function ToolFormContent() {
             setTool(foundTool);
             setForm({
               name: foundTool.name,
-              slug: foundTool.slug,
-              description: foundTool.description,
+              slug: foundTool.slug || '',
+              description: foundTool.description || '',
               pricing: foundTool.pricing,
               rating: String(foundTool.rating),
               category_id: String(foundTool.category.id),
-              visit_url: foundTool.visit_url,
+              visit_url: foundTool.visit_url || '',
               featured: foundTool.featured,
               trending: foundTool.trending,
               just_landed: foundTool.just_landed,

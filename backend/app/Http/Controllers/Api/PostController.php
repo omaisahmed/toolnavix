@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\Category;
 use App\Services\PostService;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
@@ -107,6 +108,12 @@ class PostController extends Controller
     {
         if ($post->image && ! (str_starts_with($post->image, 'http://') || str_starts_with($post->image, 'https://'))) {
             $post->image = url('/storage/'.ltrim($post->image, '/'));
+        }
+
+        // If category is numeric, look up the category name
+        if ($post->category && is_numeric($post->category)) {
+            $category = Category::find($post->category);
+            $post->category = $category ? $category->name : 'General';
         }
 
         return $post;
