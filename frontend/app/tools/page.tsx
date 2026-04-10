@@ -217,13 +217,14 @@
 //     <Suspense fallback={<div className="min-h-[80vh] bg-slate-50 py-10"><div className="container"><p className="text-center">Loading...</p></div></div>}>
 //       <ToolsPage />
 //     </Suspense>
-//   );
-// }
+'use client';
 
-// export default ToolsPageWrapper;
+import dynamic from 'next/dynamic';
 
-import { redirect } from 'next/navigation';
+const ToolsPageComponent = dynamic(() => import('./ToolsPageClient'), {
+  loading: () => null,
+});
 
 export default function ToolsPage() {
-  redirect('/browse-all');
+  return <ToolsPageComponent />;
 }

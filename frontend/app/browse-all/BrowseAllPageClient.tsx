@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '../components/Header';
@@ -27,7 +27,7 @@ function toShortDescription(value?: string, max = 120) {
   return plain.length > max ? `${plain.slice(0, max).trimEnd()}...` : plain;
 }
 
-function BrowseAllPageComponent() {
+export default function BrowseAllPageClient() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,30 +129,25 @@ function BrowseAllPageComponent() {
                   onFocus={() => setCategoryDropdownOpen(true)}
                   onBlur={() => setTimeout(() => setCategoryDropdownOpen(false), 120)}
                   placeholder="Search category..."
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm w-full"
-                  autoComplete="off"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 />
                 {categoryDropdownOpen && (
-                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                    {categories.filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase())).length > 0 ? (
-                      categories.filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase())).map((c) => (
+                  <div className="absolute top-full z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                    {categories
+                      .filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase()))
+                      .map((c) => (
                         <button
                           key={c.id}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             setCategory(c.slug);
-                            setCategoryInput(c.name);
+                            setCategoryInput('');
                             setCategoryDropdownOpen(false);
                           }}
-                          className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                          className="w-full px-3 py-2 text-left hover:bg-slate-50"
                         >
                           {c.name}
                         </button>
-                      ))
-                    ) : (
-                      <p className="px-3 py-2 text-xs text-slate-500">No matching categories</p>
-                    )}
+                      ))}
                   </div>
                 )}
               </div>
@@ -164,23 +159,17 @@ function BrowseAllPageComponent() {
                 <option value="free_trial">Free trial</option>
               </select>
               <select value={rating} onChange={(e) => { setPage(1); setRating(e.target.value); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                <option value="">Any rating</option>
-                <option value="1">1+</option>
-                <option value="2">2+</option>
-                <option value="3">3+</option>
+                <option value="">All ratings</option>
                 <option value="4">4+</option>
-                <option value="5">5</option>
+                <option value="4.5">4.5+</option>
+                <option value="5">5.0</option>
               </select>
             </div>
           </section>
 
-          {showLoadingState ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-72 animate-pulse rounded-2xl bg-slate-200" />)}
-            </div>
-          ) : tools.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">No tools found.</div>
-          ) : (
+          {loading && showLoadingState ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">Loading tools...</div>
+          ) : tools.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tools.map((tool) => (
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -206,6 +195,8 @@ function BrowseAllPageComponent() {
                 </article>
               ))}
             </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">No tools found.</div>
           )}
 
           <div className="flex items-center justify-center gap-3">
@@ -217,14 +208,4 @@ function BrowseAllPageComponent() {
       </main>
     </>
   );
-}
-
-import dynamic from 'next/dynamic';
-
-const BrowseAllPageClient = dynamic(() => import('./BrowseAllPageClient'), {
-  loading: () => <div className="min-h-screen bg-slate-50 py-10"><div className="container"><p className="text-center">Loading...</p></div></div>,
-});
-
-export default function BrowseAllPage() {
-  return <BrowseAllPageClient />;
 }
