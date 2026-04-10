@@ -38,11 +38,11 @@ function toShortDescription(value?: string, max = 120): string {
   return `${plain.slice(0, max).trimEnd()}...`;
 }
 
-function ToolCard({ tool, badge }: { tool: HomepageTool; badge: string }) {
+function ToolCard({ tool, badge, savedId }: { tool: HomepageTool; badge: string; savedId?: number | null }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
-        <SaveToolButton toolId={tool.id} variant="overlay" />
+        <SaveToolButton toolId={tool.id} variant="overlay" initialSavedId={savedId ?? null} />
         {tool.logo ? (
           <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
         ) : (
@@ -96,12 +96,14 @@ function ToolSection({
   browseLabel,
   badge,
   tools,
+  savedToolIds,
 }: {
   title: string;
   browseHref: string;
   browseLabel: string;
   badge: string;
   tools: HomepageTool[];
+  savedToolIds: Map<number, number>;
 }) {
   return (
     <section className="container pb-12">
@@ -113,7 +115,7 @@ function ToolSection({
       {tools.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {tools.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} badge={badge} />
+            <ToolCard key={tool.id} tool={tool} badge={badge} savedId={savedToolIds.get(tool.id)} />
           ))}
         </div>
       ) : (
@@ -132,6 +134,7 @@ export default function Home() {
   const [toolsLoading, setToolsLoading] = useState(false);
   const [showToolsLoading, setShowToolsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedToolIds, setSavedToolIds] = useState<Map<number, number>>(new Map());
   const router = useRouter();
   const settings = useSettings();
   
@@ -156,13 +159,23 @@ export default function Home() {
       const loadingTimer = setTimeout(() => setShowToolsLoading(true), 300);
       
       try {
-        const [toolsData, categoriesData] = await Promise.all([
+        const token = window.localStorage.getItem('toolnavix_token');
+        const [toolsData, categoriesData, savedData] = await Promise.all([
           fetchTools({ per_page: '50' }),
           fetchCategories(),
+          token ? (await import('./lib/api')).fetchSavedTools(1).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
         ]);
 
         setTools(toolsData.data ?? toolsData);
         setCategories(categoriesData);
+        
+        // Build a map of tool IDs to saved IDs for quick lookup
+        const savedMap = new Map<number, number>();
+        (savedData.data ?? []).forEach((item: any) => {
+          const toolId = item.tool_id || item.tool?.id;
+          if (toolId) savedMap.set(toolId, item.id);
+        });
+        setSavedToolIds(savedMap);
       } catch {
         setError('Unable to load homepage tools.');
       } finally {
@@ -229,6 +242,7 @@ export default function Home() {
             browseLabel="Explore all"
             badge="Just Landed"
             tools={tools.filter((tool) => tool.just_landed).slice(0, 8)}
+            savedToolIds={savedToolIds}
           />
 
           <ToolSection
@@ -237,6 +251,7 @@ export default function Home() {
             browseLabel="See all"
             badge="Trending"
             tools={tools.filter((tool) => tool.trending).slice(0, 8)}
+            savedToolIds={savedToolIds}
           />
 
           <ToolSection
@@ -245,6 +260,7 @@ export default function Home() {
             browseLabel="Browse all"
             badge="Featured"
             tools={tools.filter((tool) => tool.featured).slice(0, 8)}
+            savedToolIds={savedToolIds}
           />
         </>
       )}

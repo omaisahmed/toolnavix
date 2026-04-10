@@ -8,18 +8,21 @@ import { removeSavedTool, saveTool, fetchSavedTools } from '../lib/api';
 type SaveToolButtonProps = {
   toolId: number;
   variant?: 'default' | 'overlay';
+  initialSavedId?: number | null;
 };
 
-export default function SaveToolButton({ toolId, variant = 'default' }: SaveToolButtonProps) {
+export default function SaveToolButton({ toolId, variant = 'default', initialSavedId = null }: SaveToolButtonProps) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [savedId, setSavedId] = useState<number | null>(null);
+  const [savedId, setSavedId] = useState<number | null>(initialSavedId);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const token = window.localStorage.getItem('toolnavix_token');
     setIsLoggedIn(Boolean(token));
-    if (!token) return;
+    // If initialSavedId was provided as prop, no need to fetch
+    // Otherwise, only fetch if needed (for pages that don't provide it)
+    if (!token || initialSavedId !== undefined) return;
 
     fetchSavedTools(1)
       .then((res) => {
@@ -27,7 +30,7 @@ export default function SaveToolButton({ toolId, variant = 'default' }: SaveTool
         setSavedId(found?.id ?? null);
       })
       .catch(() => null);
-  }, [toolId]);
+  }, [toolId, initialSavedId]);
 
   const toggleSave = async () => {
     if (!isLoggedIn) {

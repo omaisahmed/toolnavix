@@ -41,6 +41,7 @@ export default function BrowseAllPageClient() {
   const [rating, setRating] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [savedToolIds, setSavedToolIds] = useState<Map<number, number>>(new Map());
 
   const searchParams = useSearchParams();
   const urlSearch = searchParams?.get('search') ?? '';
@@ -79,6 +80,26 @@ export default function BrowseAllPageClient() {
 
   useEffect(() => {
     fetchCategories().then(setCategories).catch(() => []);
+  }, []);
+
+  useEffect(() => {
+    const token = window.localStorage.getItem('toolnavix_token');
+    if (!token) return;
+
+    (async () => {
+      try {
+        const { fetchSavedTools } = await import('../lib/api');
+        const savedData = await fetchSavedTools(1);
+        const savedMap = new Map<number, number>();
+        (savedData.data ?? []).forEach((item: any) => {
+          const toolId = item.tool_id || item.tool?.id;
+          if (toolId) savedMap.set(toolId, item.id);
+        });
+        setSavedToolIds(savedMap);
+      } catch {
+        // Silently fail on load
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -174,7 +195,7 @@ export default function BrowseAllPageClient() {
               {tools.map((tool) => (
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="relative aspect-[16/9] bg-slate-100">
-                    <SaveToolButton toolId={tool.id} variant="overlay" />
+                    <SaveToolButton toolId={tool.id} variant="overlay" initialSavedId={savedToolIds.get(tool.id)} />
                     {tool.logo ? (
                       <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
                     ) : (
@@ -189,7 +210,7 @@ export default function BrowseAllPageClient() {
                       <span className="font-semibold text-indigo-700">{tool.pricing}</span>
                     </div>
                     <div className="mt-3 flex justify-end">
-                        <SaveToolButton toolId={tool.id} variant="overlay" />
+                        <SaveToolButton toolId={tool.id} variant="overlay" initialSavedId={savedToolIds.get(tool.id)} />
                     </div>
                   </div>
                 </article>
