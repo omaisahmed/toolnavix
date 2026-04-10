@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createUser, updateUser, fetchDashboardUsers, fetchSettings } from '../../lib/api';
@@ -24,7 +24,7 @@ function UserFormContent() {
   const userId = searchParams?.get('id');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(!!userId);
-  
+
   const handleLogout = () => {
     localStorage.removeItem('toolnavix_token');
     window.location.href = '/login';
@@ -38,7 +38,7 @@ function UserFormContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchSettings().then(s => setSettings(s)).catch(() => {});
+    fetchSettings().then(s => setSettings(s)).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -73,10 +73,10 @@ function UserFormContent() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = userId ? 
+      const payload = userId ?
         { name: form.name, email: form.email, ...(form.password && { password: form.password }) } :
         form;
-      
+
       let response;
       if (userId) {
         response = await updateUser(Number(userId), payload);
@@ -122,9 +122,8 @@ function UserFormContent() {
             <button
               key={tab}
               onClick={() => router.push(`/dashboard?tab=${tab}`)}
-              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                tab === 'Users' ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-100'
-              }`}
+              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'Users' ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-100'
+                }`}
             >
               {tab}
             </button>
@@ -227,5 +226,9 @@ function UserFormContent() {
 }
 
 export default function UserFormPage() {
-  return <UserFormContent />;
+  return (
+    <Suspense fallback={<div className="min-h-screen">Loading...</div>}>
+      <UserFormContent />
+    </Suspense>
+  );
 }

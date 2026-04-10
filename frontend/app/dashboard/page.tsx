@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import RichTextEditor from '../components/RichTextEditor';
@@ -599,7 +599,11 @@ const handleLogout = () => {
 };
 
 export default function DashboardPage() {
-  return <DashboardPageContent />;
+  return (
+    <Suspense fallback={<div className="min-h-screen">Loading...</div>}>
+      <DashboardPageContent />
+    </Suspense>
+  );
 }
 
 function DashboardPageContent() {

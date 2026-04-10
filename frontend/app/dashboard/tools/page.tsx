@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -543,5 +543,9 @@ function ToolFormContent() {
 }
 
 export default function ToolFormPage() {
-  return <ToolFormContent />;
+    return (
+      <Suspense fallback={<div className="min-h-screen">Loading...</div>}>
+        <ToolFormContent />
+      </Suspense>
+    );
 }

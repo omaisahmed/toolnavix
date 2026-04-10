@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -423,5 +423,9 @@ function ContentFormContent() {
 }
 
 export default function ContentFormPage() {
-  return <ContentFormContent />;
+  return (
+    <Suspense fallback={<div className="min-h-screen">Loading...</div>}>
+      <ContentFormContent />
+    </Suspense>
+  );
 }
