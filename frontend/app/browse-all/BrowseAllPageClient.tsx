@@ -136,7 +136,7 @@ export default function BrowseAllPageClient() {
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 />
                 {categoryDropdownOpen && (
-                  <div className="absolute top-full z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {categories
                       .filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase()))
                       .length > 0 ? (
