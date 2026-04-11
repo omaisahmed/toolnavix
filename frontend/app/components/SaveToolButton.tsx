@@ -11,6 +11,11 @@ type SaveToolButtonProps = {
   initialSavedId?: number | null;
 };
 
+// Global cache for saved tools - shared across all instances
+let cachedSavedTools: Map<number, number> | null = null;
+let isFetching = false;
+const fetchPromise: Promise<Map<number, number>> | null = null;
+
 export default function SaveToolButton({ toolId, variant = 'default', initialSavedId = null }: SaveToolButtonProps) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -20,16 +25,47 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
   useEffect(() => {
     const token = window.localStorage.getItem('toolnavix_token');
     setIsLoggedIn(Boolean(token));
-    // If initialSavedId was provided as prop, no need to fetch
-    // Otherwise, only fetch if needed (for pages that don't provide it)
-    if (!token || initialSavedId !== undefined) return;
+    
+    // If initialSavedId was provided or not logged in, skip fetch
+    if (!token || initialSavedId !== null) return;
 
+    // If we already have cached data, use it
+    if (cachedSavedTools) {
+      const found = cachedSavedTools.get(toolId);
+      setSavedId(found ?? null);
+      return;
+    }
+
+    // Prevent multiple fetch calls
+    if (isFetching) {
+      const checkCache = setInterval(() => {
+        if (cachedSavedTools) {
+          const found = cachedSavedTools.get(toolId);
+          setSavedId(found ?? null);
+          clearInterval(checkCache);
+        }
+      }, 50);
+      return () => clearInterval(checkCache);
+    }
+
+    // Fetch once and cache for all instances
+    isFetching = true;
     fetchSavedTools(1)
       .then((res) => {
-        const found = (res.data ?? []).find((item: any) => item.tool_id === toolId || item.tool?.id === toolId);
-        setSavedId(found?.id ?? null);
+        const savedMap = new Map<number, number>();
+        (res.data ?? []).forEach((item: any) => {
+          const id = item.tool_id || item.tool?.id;
+          if (id) savedMap.set(id, item.id);
+        });
+        cachedSavedTools = savedMap;
+        setSavedId(savedMap.get(toolId) ?? null);
       })
-      .catch(() => null);
+      .catch(() => {
+        cachedSavedTools = new Map();
+      })
+      .finally(() => {
+        isFetching = false;
+      });
   }, [toolId, initialSavedId]);
 
   const toggleSave = async () => {
@@ -56,10 +92,18 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
       if (savedId) {
         await removeSavedTool(savedId);
         setSavedId(null);
+        // Update global cache
+        if (cachedSavedTools) {
+          cachedSavedTools.delete(toolId);
+        }
         toast.success('Removed from My Tools');
       } else {
         const response = await saveTool(toolId);
         setSavedId(response.id ?? null);
+        // Update global cache
+        if (response.id && cachedSavedTools) {
+          cachedSavedTools.set(toolId, response.id);
+        }
         toast.success('Saved to My Tools');
       }
     } catch {
