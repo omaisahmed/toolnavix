@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
-import RichTextEditor from '../components/RichTextEditor';
+import ImageUpload from '../components/ImageUpload';
 import FilterBar from '../components/FilterBar';
 import { ConfirmModal } from '../components/ConfirmModal';
+import RichTextEditor from '../components/RichTextEditor';
 import { stripHtml } from '../lib/richText';
 import {
   createCategory,
@@ -264,42 +265,31 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">Tool Image</label>
-                <div className="mt-2 flex items-center gap-4">
-                  {formData.logo && !imageFile && (
-                    <div className="h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                      <img src={formData.logo} alt={`${formData.name} preview`} className="h-full w-full object-cover" />
-                    </div>
-                  )}
-                  {imageFile && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      {imageFile.name}
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
+                <div className="mt-2">
+                  <ImageUpload
+                    currentImage={formData.logo}
+                    onImageSelect={(file) => {
                       setImageFile(file);
-                      if (file) {
-                        setFormData({ ...formData, remove_logo: false });
-                      }
+                      setFormData({ ...formData, remove_logo: false });
                     }}
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
-                  />
-                </div>
-                {formData.logo && (
-                  <button
-                    type="button"
-                    onClick={() => {
+                    onImageRemove={() => {
                       setFormData({ ...formData, logo: '', remove_logo: true });
                       setImageFile(null);
                     }}
-                    className="mt-2 text-sm text-rose-600 hover:underline"
-                  >
-                    Remove current image
-                  </button>
-                )}
+                  />
+                  {formData.logo && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, logo: '', remove_logo: true });
+                        setImageFile(null);
+                      }}
+                      className="mt-2 text-sm text-rose-600 hover:underline"
+                    >
+                      Remove current image
+                    </button>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
               </div>
               <div>
@@ -516,42 +506,31 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">Featured Image</label>
-                <div className="mt-2 flex items-center gap-4">
-                  {formData.image && !imageFile && (
-                    <div className="h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                      <img src={formData.image} alt={`${formData.title} preview`} className="h-full w-full object-cover" />
-                    </div>
-                  )}
-                  {imageFile && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      {imageFile.name}
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
+                <div className="mt-2">
+                  <ImageUpload
+                    currentImage={formData.image}
+                    onImageSelect={(file) => {
                       setImageFile(file);
-                      if (file) {
-                        setFormData({ ...formData, remove_image: false });
-                      }
+                      setFormData({ ...formData, remove_image: false });
                     }}
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
-                  />
-                </div>
-                {formData.image && (
-                  <button
-                    type="button"
-                    onClick={() => {
+                    onImageRemove={() => {
                       setFormData({ ...formData, image: '', remove_image: true });
                       setImageFile(null);
                     }}
-                    className="mt-2 text-sm text-rose-600 hover:underline"
-                  >
-                    Remove current image
-                  </button>
-                )}
+                  />
+                  {formData.image && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, image: '', remove_image: true });
+                        setImageFile(null);
+                      }}
+                      className="mt-2 text-sm text-rose-600 hover:underline"
+                    >
+                      Remove current image
+                    </button>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
               </div>
               <div>
@@ -719,6 +698,8 @@ function DashboardPageContent() {
   const [isPostCategoryOpen, setIsPostCategoryOpen] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [removeFavicon, setRemoveFavicon] = useState(false);
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [formModal, setFormModal] = useState<FormModalState>({ isOpen: false, type: null, mode: 'create' });
   const [formData, setFormData] = useState<any>({});
@@ -1141,6 +1122,8 @@ function DashboardPageContent() {
       const formData = new FormData();
       if (logoFile) formData.append('logo', logoFile);
       if (faviconFile) formData.append('favicon', faviconFile);
+      if (removeLogo) formData.append('remove_logo', '1');
+      if (removeFavicon) formData.append('remove_favicon', '1');
       formData.append('footer_text', settings.footer_text || '');
       formData.append('hero_badge', settings.hero_badge || '');
       formData.append('hero_title', settings.hero_title || '');
@@ -1155,6 +1138,8 @@ function DashboardPageContent() {
       toast.success('Settings updated successfully.');
       setLogoFile(null);
       setFaviconFile(null);
+      setRemoveLogo(false);
+      setRemoveFavicon(false);
       loadData({ showLoading: false }).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Unable to update settings.');
@@ -2491,34 +2476,36 @@ function DashboardPageContent() {
                     <div className="grid gap-6 lg:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
-                        <div className="flex items-center gap-4">
-                          {settings.logo_url && (
-                            <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center">
-                              <img src={settings.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
-                            </div>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        <div className="mt-2">
+                          <ImageUpload
+                            currentImage={settings.logo_url}
+                            onImageSelect={(file) => {
+                              setLogoFile(file);
+                              setRemoveLogo(false);
+                            }}
+                            onImageRemove={() => {
+                              setLogoFile(null);
+                              setRemoveLogo(true);
+                              setSettings((prev) => prev ? { ...prev, logo_url: '' } : prev);
+                            }}
                           />
                         </div>
                         <p className="mt-1 text-xs text-slate-500">Recommended: 512x512px</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Favicon</label>
-                        <div className="flex items-center gap-4">
-                          {settings.favicon_url && (
-                            <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center">
-                              <img src={settings.favicon_url} alt="Favicon" className="max-h-full max-w-full object-contain" />
-                            </div>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setFaviconFile(e.target.files?.[0] || null)}
-                            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        <div className="mt-2">
+                          <ImageUpload
+                            currentImage={settings.favicon_url}
+                            onImageSelect={(file) => {
+                              setFaviconFile(file);
+                              setRemoveFavicon(false);
+                            }}
+                            onImageRemove={() => {
+                              setFaviconFile(null);
+                              setRemoveFavicon(true);
+                              setSettings((prev) => prev ? { ...prev, favicon_url: '' } : prev);
+                            }}
                           />
                         </div>
                         <p className="mt-1 text-xs text-slate-500">Recommended: 256x256px or 64x64px</p>

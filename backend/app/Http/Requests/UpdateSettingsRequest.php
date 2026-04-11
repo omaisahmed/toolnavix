@@ -16,6 +16,8 @@ class UpdateSettingsRequest extends FormRequest
         return [
             'logo' => 'sometimes|image|max:4096',
             'favicon' => 'sometimes|image|max:2048',
+            'remove_logo' => 'sometimes|boolean',
+            'remove_favicon' => 'sometimes|boolean',
             'footer_text' => 'nullable|string|max:1000',
             'hero_badge' => 'nullable|string|max:120',
             'hero_title' => 'nullable|string|max:255',

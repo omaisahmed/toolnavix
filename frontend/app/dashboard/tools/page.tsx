@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
+import ImageUpload from '../../components/ImageUpload';
 import { createTool, updateTool, fetchTools, fetchSettings, fetchCategories } from '../../lib/api';
 
 type Tool = {
@@ -141,7 +142,9 @@ function ToolFormContent() {
         payload = new FormData();
         payload.append('name', form.name);
         payload.append('slug', form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-        payload.append('description', form.description);
+        if (form.description != null) {
+          payload.append('description', form.description);
+        }
         payload.append('pricing', form.pricing);
         payload.append('rating', String(parseFloat(form.rating)));
         payload.append('category_id', String(Number(form.category_id)));
@@ -166,7 +169,6 @@ function ToolFormContent() {
         payload = {
           name: form.name,
           slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          description: form.description,
           pricing: form.pricing,
           rating: parseFloat(form.rating),
           category_id: Number(form.category_id),
@@ -178,6 +180,9 @@ function ToolFormContent() {
           pros: JSON.stringify(prosArray),
           cons: JSON.stringify(consArray),
         };
+        if (form.description != null) {
+          payload.description = form.description;
+        }
         if (form.visit_url.trim()) {
           payload.visit_url = form.visit_url;
         }
@@ -387,31 +392,18 @@ function ToolFormContent() {
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Tool Image</label>
-                <div className="flex items-center gap-4">
-                  {form.logo && !toolImageFile && (
-                    <div className="h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                      <img src={form.logo} alt={`${form.name} preview`} className="h-full w-full object-cover" />
-                    </div>
-                  )}
-                  {toolImageFile && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      {toolImageFile.name}
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setToolImageFile(file);
-                      if (file) {
-                        setForm({ ...form, remove_logo: false });
-                      }
-                    }}
-                    className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                  />
-                </div>
+                <ImageUpload
+                  label="Tool Logo"
+                  currentImage={form.logo}
+                  onImageSelect={(file) => {
+                    setToolImageFile(file);
+                    setForm({ ...form, remove_logo: false });
+                  }}
+                  onImageRemove={() => {
+                    setForm({ ...form, logo: '', remove_logo: true });
+                    setToolImageFile(null);
+                  }}
+                />
                 {form.logo && (
                   <button
                     type="button"
@@ -424,7 +416,7 @@ function ToolFormContent() {
                     Remove current image
                   </button>
                 )}
-                <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
+                <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 2MB.</p>
               </div>
             </div>
 

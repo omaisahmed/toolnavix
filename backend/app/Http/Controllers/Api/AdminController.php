@@ -10,6 +10,7 @@ use App\Models\Tool;
 use App\Models\ToolView;
 use App\Models\User;
 use App\Services\AdminService;
+use App\Services\CloudinaryService;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UpdateSettingsRequest;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
-    public function __construct(protected AdminService $adminService)
+    public function __construct(protected AdminService $adminService, protected CloudinaryService $cloudinaryService)
     {
     }
 
@@ -191,5 +192,38 @@ class AdminController extends Controller
         }
 
         return response()->json(['message' => count($reviews) . ' reviews deleted']);
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image',
+            'folder' => 'required|string|in:editor,logos,favicons,posts,tools',
+        ]);
+
+        $file = $request->file('image');
+        $folder = $request->input('folder');
+
+        // Map folder names to Cloudinary folders
+        $folderMap = [
+            'editor' => 'posts/editor',
+            'logos' => 'settings/logos',
+            'favicons' => 'settings/favicons',
+            'posts' => 'posts/images',
+            'tools' => 'tools/logos',
+        ];
+
+        $cloudinaryFolder = $folderMap[$folder] ?? 'misc';
+
+        $result = $this->cloudinaryService->uploadImage($file, $cloudinaryFolder);
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to upload image'], 500);
+        }
+
+        return response()->json([
+            'url' => $result['secure_url'],
+            'public_id' => $result['public_id'],
+        ]);
     }
 }

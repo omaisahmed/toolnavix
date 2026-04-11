@@ -22,6 +22,8 @@ class Tool extends Model
         'is_top',
         'visit_url',
         'logo',
+        'logo_url',
+        'logo_public_id',
         'features',
         'pros',
         'cons',

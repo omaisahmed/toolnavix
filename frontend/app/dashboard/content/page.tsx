@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
+import ImageUpload from '../../components/ImageUpload';
 import { createPost, updatePost, fetchDashboardPosts, fetchSettings, fetchCategories } from '../../lib/api';
 
 type Post = {
@@ -50,6 +51,7 @@ function ContentFormContent() {
     tags: '',
     excerpt: '',
     image: '',
+    remove_image: false,
     content: '',
     meta_title: '',
     meta_description: '',
@@ -82,6 +84,7 @@ function ContentFormContent() {
               tags: typeof found.tags === 'string' ? found.tags : (Array.isArray(found.tags) ? found.tags.join(', ') : ''),
               excerpt: found.excerpt || '',
               image: found.image || '',
+              remove_image: false,
               content: found.content,
               meta_title: found.meta_title || '',
               meta_description: found.meta_description || '',
@@ -114,7 +117,8 @@ function ContentFormContent() {
       
       let payload: FormData | Record<string, unknown>;
       
-      if (postImageFile) {
+      const useFormData = postImageFile || form.remove_image;
+      if (useFormData) {
         payload = new FormData();
         payload.append('title', form.title);
         payload.append('slug', form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
@@ -126,7 +130,12 @@ function ContentFormContent() {
         payload.append('meta_title', form.meta_title);
         payload.append('meta_description', form.meta_description);
         payload.append('published', form.published ? '1' : '0');
-        payload.append('image', postImageFile);
+        if (postImageFile) {
+          payload.append('image', postImageFile);
+        }
+        if (form.remove_image) {
+          payload.append('remove_image', '1');
+        }
       } else {
         payload = {
           title: form.title,
@@ -335,26 +344,18 @@ function ContentFormContent() {
                 />
               </div>
               <div className="mt-6">
-                <label className="text-sm font-medium text-slate-700">Post Image</label>
-                <div className="mt-2 flex items-center gap-4">
-                  {form.image && !postImageFile && (
-                    <div className="h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                      <img src={form.image} alt="Post preview" className="h-full w-full object-cover" />
-                    </div>
-                  )}
-                  {postImageFile && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      {postImageFile.name}
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
+                <label className="text-sm font-medium text-slate-700 mb-2">Post Image</label>
+                <div className="mt-2">
+                  <ImageUpload
+                    currentImage={form.image}
+                    onImageSelect={(file) => {
                       setPostImageFile(file);
+                      setForm({ ...form, remove_image: false });
                     }}
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2"
+                    onImageRemove={() => {
+                      setPostImageFile(null);
+                      setForm({ ...form, image: '', remove_image: true });
+                    }}
                   />
                 </div>
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>

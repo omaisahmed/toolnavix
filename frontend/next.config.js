@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Your Next.js configuration options here
+  images: {
+    domains: ['res.cloudinary.com'], // Allow Cloudinary images
+  },
 }
 
 module.exports = nextConfig

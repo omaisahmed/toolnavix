@@ -8,10 +8,14 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudinaryService;
 
 class AdminService
 {
+    public function __construct(
+        protected CloudinaryService $cloudinaryService
+    ) {}
+
     public function createUser(array $data): User
     {
         $data['password'] = bcrypt($data['password']);
@@ -64,35 +68,53 @@ class AdminService
     public function updateSettings(array $data, ?UploadedFile $logoFile = null, ?UploadedFile $faviconFile = null): Setting
     {
         $settings = Setting::firstOrNew();
-        $newLogoPath = null;
-        $newFaviconPath = null;
+        $logoData = null;
+        $faviconData = null;
+
+        if (! empty($data['remove_logo'])) {
+            if ($settings->logo_public_id) {
+                $this->cloudinaryService->deleteImage($settings->logo_public_id);
+            }
+            $data['logo_url'] = null;
+            $data['logo_public_id'] = null;
+        }
+
+        if (! empty($data['remove_favicon'])) {
+            if ($settings->favicon_public_id) {
+                $this->cloudinaryService->deleteImage($settings->favicon_public_id);
+            }
+            $data['favicon_url'] = null;
+            $data['favicon_public_id'] = null;
+        }
 
         if ($logoFile) {
-            $newLogoPath = $logoFile->store('uploads/settings', 'public');
-            $data['logo_url'] = $newLogoPath;
+            $logoData = $this->cloudinaryService->uploadImage($logoFile, 'settings/logos');
+            if ($logoData) {
+                $data['logo_url'] = $logoData['secure_url'];
+                $data['logo_public_id'] = $logoData['public_id'];
+            }
         }
 
         if ($faviconFile) {
-            $newFaviconPath = $faviconFile->store('uploads/settings', 'public');
-            $data['favicon_url'] = $newFaviconPath;
+            $faviconData = $this->cloudinaryService->uploadImage($faviconFile, 'settings/favicons');
+            if ($faviconData) {
+                $data['favicon_url'] = $faviconData['secure_url'];
+                $data['favicon_public_id'] = $faviconData['public_id'];
+            }
         }
 
-        return DB::transaction(function () use ($settings, $data, $newLogoPath, $newFaviconPath) {
-            if (array_key_exists('logo_url', $data) && $settings->logo_url && $settings->logo_url !== $data['logo_url']) {
-                $this->deleteStoredFile($settings->logo_url);
+        return DB::transaction(function () use ($settings, $data, $logoData, $faviconData) {
+            // Delete old images from Cloudinary if new ones are uploaded
+            if ($logoData && $settings->logo_public_id) {
+                $this->cloudinaryService->deleteImage($settings->logo_public_id);
             }
 
-            if (array_key_exists('favicon_url', $data) && $settings->favicon_url && $settings->favicon_url !== $data['favicon_url']) {
-                $this->deleteStoredFile($settings->favicon_url);
+            if ($faviconData && $settings->favicon_public_id) {
+                $this->cloudinaryService->deleteImage($settings->favicon_public_id);
             }
 
             foreach ($data as $key => $value) {
-                if ($key === 'logo_url' || $key === 'favicon_url') {
-                    $settings->{$key} = $value;
-                    continue;
-                }
-
-                if (in_array($key, ['footer_text', 'hero_badge', 'hero_title', 'hero_subtitle', 'hero_search_placeholder', 'hero_search_button_text', 'hero_tag_1', 'hero_tag_2', 'hero_tag_3'], true)) {
+                if (in_array($key, ['logo_url', 'logo_public_id', 'favicon_url', 'favicon_public_id', 'footer_text', 'hero_badge', 'hero_title', 'hero_subtitle', 'hero_search_placeholder', 'hero_search_button_text', 'hero_tag_1', 'hero_tag_2', 'hero_tag_3'], true)) {
                     $settings->{$key} = $value ?: null;
                 }
             }

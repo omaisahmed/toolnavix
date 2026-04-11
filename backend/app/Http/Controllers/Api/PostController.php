@@ -106,7 +106,10 @@ class PostController extends Controller
 
     protected function formatPost(Post $post): Post
     {
-        if ($post->image && ! (str_starts_with($post->image, 'http://') || str_starts_with($post->image, 'https://'))) {
+        // Use Cloudinary URL if available, otherwise fallback to local storage
+        if ($post->image_url) {
+            $post->image = $post->image_url;
+        } elseif ($post->image && ! (str_starts_with($post->image, 'http://') || str_starts_with($post->image, 'https://'))) {
             $post->image = url('/storage/'.ltrim($post->image, '/'));
         }
 

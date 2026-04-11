@@ -75,12 +75,74 @@ export default function RichTextEditor({
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const dataUrl = e.target?.result as string;
-            document.execCommand('insertHTML', false, `<img src="${dataUrl}" style="max-width: 100%; height: auto; margin: 10px 0;" alt="Pasted image" />`);
-          };
-          reader.readAsDataURL(file);
+          // Insert loading placeholder
+          const loadingImg = document.createElement('img');
+          loadingImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0VjE2QzE0IDE3LjEgMTMuMSAxOCA5IDE4QzYuOSAxOCA2IDE3LjEgNiAxNlY0QzYgMi45IDYuOSAyIDggMkgxNkMxNy4xIDIgMTggMi45IDE4IDRWMTZDMTggMTcuMSAxNy4xIDE4IDE2IDE4SDEyQzEwLjkgMTggMTAgMTcuMSAxMCAxNlY0QzEwIDIuOSAxMC45IDIgMTIgMloiIGZpbGw9IiM5Q0E0QUYiLz4KPC9zdmc+';
+          loadingImg.style.cssText = 'width: 24px; height: 24px; display: inline-block; margin: 10px 0;';
+          document.execCommand('insertHTML', false, loadingImg.outerHTML);
+
+          // Upload to Cloudinary
+          (async () => {
+            try {
+              const formData = new FormData();
+              formData.append('image', file);
+              formData.append('folder', 'editor');
+
+              const token = localStorage.getItem('toolnavix_token');
+              const response = await fetch('/api/upload-image', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                // Replace loading image with uploaded image
+                const imgHtml = `<img src="${data.url}" style="max-width: 100%; height: auto; margin: 10px 0;" alt="Pasted image" />`;
+                // Find and replace the loading image
+                const loadingImgs = editorRef.current?.querySelectorAll('img[src*="data:image/svg+xml"]');
+                if (loadingImgs && loadingImgs.length > 0) {
+                  const lastLoadingImg = loadingImgs[loadingImgs.length - 1];
+                  lastLoadingImg.outerHTML = imgHtml;
+                }
+              } else {
+                // Remove loading image and show error
+                const errorMsg = document.createElement('span');
+                errorMsg.textContent = 'Failed to upload image';
+                errorMsg.style.cssText = 'color: red; font-size: 12px; margin: 10px 0; display: inline-block;';
+                const loadingImgs = editorRef.current?.querySelectorAll('img[src*="data:image/svg+xml"]');
+                if (loadingImgs && loadingImgs.length > 0) {
+                  const lastLoadingImg = loadingImgs[loadingImgs.length - 1];
+                  lastLoadingImg.outerHTML = errorMsg.outerHTML;
+                }
+              }
+
+              setTimeout(() => {
+                if (editorRef.current) {
+                  const html = sanitizeRichHtml(editorRef.current.innerHTML);
+                  onChange(html);
+                }
+              }, 100);
+            } catch (error) {
+              console.error('Image upload failed:', error);
+              const errorMsg = document.createElement('span');
+              errorMsg.textContent = 'Failed to upload image';
+              errorMsg.style.cssText = 'color: red; font-size: 12px; margin: 10px 0; display: inline-block;';
+              const loadingImgs = editorRef.current?.querySelectorAll('img[src*="data:image/svg+xml"]');
+              if (loadingImgs && loadingImgs.length > 0) {
+                const lastLoadingImg = loadingImgs[loadingImgs.length - 1];
+                lastLoadingImg.outerHTML = errorMsg.outerHTML;
+              }
+              setTimeout(() => {
+                if (editorRef.current) {
+                  const html = sanitizeRichHtml(editorRef.current.innerHTML);
+                  onChange(html);
+                }
+              }, 100);
+            }
+          })();
         }
       }
     }
@@ -127,20 +189,56 @@ export default function RichTextEditor({
         </button>
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
-            fileInput.onchange = (e) => {
+            fileInput.onchange = async (e) => {
               const file = (e.target as HTMLInputElement).files?.[0];
               if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                  const dataUrl = event.target?.result as string;
-                  document.execCommand('insertHTML', false, `<img src="${dataUrl}" style="max-width: 100%; height: auto; margin: 10px 0;" alt="Inserted image" />`);
+                try {
+                  // Show loading state
+                  const loadingImg = document.createElement('img');
+                  loadingImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0VjE2QzE0IDE3LjEgMTMuMSAxOCA5IDE4QzYuOSAxOCA2IDE3LjEgNiAxNlY0QzYgMi45IDYuOSAyIDggMkgxNkMxNy4xIDIgMTggMi45IDE4IDRWMTZDMTggMTcuMSAxNy4xIDE4IDE2IDE4SDEyQzEwLjkgMTggMTAgMTcuMSAxMCAxNlY0QzEwIDIuOSAxMC45IDIgMTIgMloiIGZpbGw9IiM5Q0E0QUYiLz4KPC9zdmc+';
+                  loadingImg.style.cssText = 'width: 24px; height: 24px; display: inline-block; margin: 10px 0;';
+                  document.execCommand('insertHTML', false, loadingImg.outerHTML);
+
+                  // Upload to Cloudinary
+                  const formData = new FormData();
+                  formData.append('image', file);
+                  formData.append('folder', 'editor');
+
+                  const token = localStorage.getItem('toolnavix_token');
+                  const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                    },
+                    body: formData,
+                  });
+
+                  if (response.ok) {
+                    const data = await response.json();
+                    // Replace loading image with uploaded image
+                    const imgHtml = `<img src="${data.url}" style="max-width: 100%; height: auto; margin: 10px 0;" alt="Uploaded image" />`;
+                    document.execCommand('insertHTML', false, imgHtml);
+                  } else {
+                    // Remove loading image and show error
+                    const errorMsg = document.createElement('span');
+                    errorMsg.textContent = 'Failed to upload image';
+                    errorMsg.style.cssText = 'color: red; font-size: 12px; margin: 10px 0; display: inline-block;';
+                    document.execCommand('insertHTML', false, errorMsg.outerHTML);
+                  }
+
                   handleInput();
-                };
-                reader.readAsDataURL(file);
+                } catch (error) {
+                  console.error('Image upload failed:', error);
+                  const errorMsg = document.createElement('span');
+                  errorMsg.textContent = 'Failed to upload image';
+                  errorMsg.style.cssText = 'color: red; font-size: 12px; margin: 10px 0; display: inline-block;';
+                  document.execCommand('insertHTML', false, errorMsg.outerHTML);
+                  handleInput();
+                }
               }
             };
             fileInput.click();

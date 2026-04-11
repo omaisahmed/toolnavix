@@ -154,7 +154,9 @@ class ToolController extends Controller
 
     protected function formatTool(Tool $tool): Tool
     {
-        if ($tool->logo && ! (str_starts_with($tool->logo, 'http://') || str_starts_with($tool->logo, 'https://'))) {
+        if ($tool->logo_url) {
+            $tool->logo = $tool->logo_url;
+        } elseif ($tool->logo && ! (str_starts_with($tool->logo, 'http://') || str_starts_with($tool->logo, 'https://'))) {
             $tool->logo = url('/storage/'.ltrim($tool->logo, '/'));
         }
 

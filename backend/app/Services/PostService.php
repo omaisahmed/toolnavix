@@ -10,6 +10,10 @@ use Illuminate\Support\Str;
 
 class PostService
 {
+    public function __construct(
+        protected CloudinaryService $cloudinaryService
+    ) {}
+
     public function create(array $data, ?UploadedFile $imageFile = null): Post
     {
         $data = $this->prepareTags($data);
@@ -17,7 +21,12 @@ class PostService
         $data['published_at'] = $this->resolvePublishedAt($data['published_at'] ?? null);
 
         if ($imageFile) {
-            $data['image'] = $imageFile->store('uploads/posts', 'public');
+            $folder = $this->getUploadFolder($data['type'] ?? 'blog');
+            $imageData = $this->cloudinaryService->uploadImage($imageFile, $folder);
+            if ($imageData) {
+                $data['image_url'] = $imageData['secure_url'];
+                $data['image_public_id'] = $imageData['public_id'];
+            }
         }
 
         unset($data['remove_image']);
@@ -27,8 +36,8 @@ class PostService
                 return Post::create($data);
             });
         } catch (\Throwable $exception) {
-            if (isset($data['image'])) {
-                Storage::disk('public')->delete($data['image']);
+            if (isset($imageData) && isset($imageData['public_id'])) {
+                $this->cloudinaryService->deleteImage($imageData['public_id']);
             }
 
             throw $exception;
@@ -47,16 +56,27 @@ class PostService
             $data['published_at'] = $this->resolvePublishedAt($data['published_at']);
         }
 
+        $newImageData = null;
+        $oldImagePublicId = $post->image_public_id;
+
         if (! empty($data['remove_image'])) {
-            $this->deleteStoredImage($post->getRawOriginal('image'));
-            $data['image'] = null;
+            if ($oldImagePublicId) {
+                $this->cloudinaryService->deleteImage($oldImagePublicId);
+            }
+            $data['image_url'] = null;
+            $data['image_public_id'] = null;
         }
 
-        $newImagePath = null;
         if ($imageFile) {
-            $newImagePath = $imageFile->store('uploads/posts', 'public');
-            $data['image'] = $newImagePath;
-            $this->deleteStoredImage($post->getRawOriginal('image'));
+            $folder = $this->getUploadFolder($data['type'] ?? $post->type);
+            $newImageData = $this->cloudinaryService->uploadImage($imageFile, $folder);
+            if ($newImageData) {
+                $data['image_url'] = $newImageData['secure_url'];
+                $data['image_public_id'] = $newImageData['public_id'];
+                if ($oldImagePublicId) {
+                    $this->cloudinaryService->deleteImage($oldImagePublicId);
+                }
+            }
         }
 
         unset($data['remove_image']);
@@ -67,8 +87,8 @@ class PostService
                 return $post;
             });
         } catch (\Throwable $exception) {
-            if ($newImagePath) {
-                Storage::disk('public')->delete($newImagePath);
+            if ($newImageData && isset($newImageData['public_id'])) {
+                $this->cloudinaryService->deleteImage($newImageData['public_id']);
             }
 
             throw $exception;
@@ -77,15 +97,15 @@ class PostService
 
     public function destroy(Post $post): void
     {
-        $imagePath = $post->getRawOriginal('image');
-        $content = $post->content;
+        $imagePublicId = $post->image_public_id;
 
         DB::transaction(function () use ($post) {
             $post->delete();
         });
 
-        $this->deleteStoredImage($imagePath);
-        $this->deleteEmbeddedImages($content);
+        if ($imagePublicId) {
+            $this->cloudinaryService->deleteImage($imagePublicId);
+        }
     }
 
     public function bulkDestroy(array $ids): int
@@ -99,11 +119,21 @@ class PostService
         });
 
         foreach ($posts as $post) {
-            $this->deleteStoredImage($post->getRawOriginal('image'));
-            $this->deleteEmbeddedImages($post->content);
+            if ($post->image_public_id) {
+                $this->cloudinaryService->deleteImage($post->image_public_id);
+            }
         }
 
         return $posts->count();
+    }
+
+    protected function getUploadFolder(string $postType): string
+    {
+        return match ($postType) {
+            'news' => 'posts/ai-news',
+            'guide' => 'posts/guides',
+            default => 'posts/blogs',
+        };
     }
 
     protected function buildUniqueSlug(?string $requestedSlug, string $fallbackSource, ?int $ignoreId = null): string

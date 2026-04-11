@@ -11,9 +11,13 @@ use Illuminate\Support\Str;
 
 class ToolService
 {
+    public function __construct(
+        protected CloudinaryService $cloudinaryService
+    ) {}
+
     public function create(array $data, ?UploadedFile $logoFile = null): Tool
     {
-        $storedLogoPath = null;
+        $logoData = null;
 
         if (isset($data['pricing'])) {
             $data['pricing'] = $this->normalizePricing($data['pricing']);
@@ -23,19 +27,25 @@ class ToolService
         $data['slug'] = $this->buildUniqueSlug($data['slug'] ?? null, $data['name']);
 
         if ($logoFile) {
-            $storedLogoPath = $logoFile->store('uploads/tools', 'public');
-            $data['logo'] = $storedLogoPath;
+            $logoData = $this->cloudinaryService->uploadImage($logoFile, 'tools/logos');
+            if (! $logoData) {
+                throw new \RuntimeException('Unable to upload tool logo to Cloudinary.');
+            }
+
+            $data['logo_url'] = $logoData['secure_url'];
+            $data['logo_public_id'] = $logoData['public_id'];
         }
 
-        unset($data['remove_logo']);
+        // Remove logo field to prevent storing temp path
+        unset($data['logo'], $data['remove_logo']);
 
         try {
             return DB::transaction(function () use ($data) {
                 return Tool::create($data);
             });
         } catch (\Throwable $exception) {
-            if ($storedLogoPath) {
-                Storage::disk('public')->delete($storedLogoPath);
+            if ($logoData && isset($logoData['public_id'])) {
+                $this->cloudinaryService->deleteImage($logoData['public_id']);
             }
 
             throw $exception;
@@ -44,8 +54,8 @@ class ToolService
 
     public function update(Tool $tool, array $data, ?UploadedFile $logoFile = null): Tool
     {
-        $newLogoPath = null;
-        $oldLogoPath = $tool->getRawOriginal('logo');
+        $newLogoData = null;
+        $oldLogoPublicId = $tool->logo_public_id;
 
         if (array_key_exists('pricing', $data)) {
             $data['pricing'] = $this->normalizePricing($data['pricing']);
@@ -58,17 +68,28 @@ class ToolService
         $data = $this->prepareJsonFields($data);
 
         if (! empty($data['remove_logo'])) {
-            $this->deleteStoredLogo($oldLogoPath);
-            $data['logo'] = null;
+            if ($oldLogoPublicId) {
+                $this->cloudinaryService->deleteImage($oldLogoPublicId);
+            }
+            $data['logo_url'] = null;
+            $data['logo_public_id'] = null;
         }
 
         if ($logoFile) {
-            $newLogoPath = $logoFile->store('uploads/tools', 'public');
-            $data['logo'] = $newLogoPath;
-            $this->deleteStoredLogo($oldLogoPath);
+            $newLogoData = $this->cloudinaryService->uploadImage($logoFile, 'tools/logos');
+            if (! $newLogoData) {
+                throw new \RuntimeException('Unable to upload tool logo to Cloudinary.');
+            }
+
+            $data['logo_url'] = $newLogoData['secure_url'];
+            $data['logo_public_id'] = $newLogoData['public_id'];
+            if ($oldLogoPublicId) {
+                $this->cloudinaryService->deleteImage($oldLogoPublicId);
+            }
         }
 
-        unset($data['remove_logo']);
+        // Remove logo field to prevent storing temp path
+        unset($data['logo'], $data['remove_logo']);
 
         try {
             return DB::transaction(function () use ($tool, $data) {
@@ -77,8 +98,8 @@ class ToolService
                 return $tool;
             });
         } catch (\Throwable $exception) {
-            if ($newLogoPath) {
-                Storage::disk('public')->delete($newLogoPath);
+            if ($newLogoData && isset($newLogoData['public_id'])) {
+                $this->cloudinaryService->deleteImage($newLogoData['public_id']);
             }
 
             throw $exception;
@@ -87,21 +108,15 @@ class ToolService
 
     public function destroy(Tool $tool): void
     {
-        $logoPath = $tool->getRawOriginal('logo');
-        $description = $tool->description;
-        $features = $tool->features;
-        $pros = $tool->pros;
-        $cons = $tool->cons;
+        $logoPublicId = $tool->logo_public_id;
 
         DB::transaction(function () use ($tool) {
             $tool->delete();
         });
 
-        $this->deleteStoredLogo($logoPath);
-        $this->deleteEmbeddedImagesFromValue($description);
-        $this->deleteEmbeddedImagesFromValue($features);
-        $this->deleteEmbeddedImagesFromValue($pros);
-        $this->deleteEmbeddedImagesFromValue($cons);
+        if ($logoPublicId) {
+            $this->cloudinaryService->deleteImage($logoPublicId);
+        }
     }
 
     public function bulkDestroy(array $ids): int
@@ -115,11 +130,9 @@ class ToolService
         });
 
         foreach ($tools as $tool) {
-            $this->deleteStoredLogo($tool->getRawOriginal('logo'));
-            $this->deleteEmbeddedImagesFromValue($tool->description);
-            $this->deleteEmbeddedImagesFromValue($tool->features);
-            $this->deleteEmbeddedImagesFromValue($tool->pros);
-            $this->deleteEmbeddedImagesFromValue($tool->cons);
+            if ($tool->logo_public_id) {
+                $this->cloudinaryService->deleteImage($tool->logo_public_id);
+            }
         }
 
         return $tools->count();
@@ -127,59 +140,14 @@ class ToolService
 
     public function formatTool(Tool $tool): Tool
     {
-        if ($tool->logo && ! (str_starts_with($tool->logo, 'http://') || str_starts_with($tool->logo, 'https://'))) {
+        // Use Cloudinary URL if available, otherwise fallback to local storage
+        if ($tool->logo_url) {
+            $tool->logo = $tool->logo_url;
+        } elseif ($tool->logo && ! (str_starts_with($tool->logo, 'http://') || str_starts_with($tool->logo, 'https://'))) {
             $tool->logo = url('/storage/'.ltrim($tool->logo, '/'));
         }
 
         return $tool;
-    }
-
-    protected function deleteStoredLogo(?string $path): void
-    {
-        if (! $path) {
-            return;
-        }
-
-        $relativePath = preg_replace('#^(?:https?://[^/]+)?/storage/#', '', $path);
-        if (! $relativePath) {
-            return;
-        }
-
-        if (Storage::disk('public')->exists($relativePath)) {
-            Storage::disk('public')->delete($relativePath);
-        }
-    }
-
-    protected function deleteEmbeddedImagesFromValue(mixed $value): void
-    {
-        if (is_array($value)) {
-            foreach ($value as $item) {
-                $this->deleteEmbeddedImagesFromValue($item);
-            }
-
-            return;
-        }
-
-        if (! is_string($value) || trim($value) === '') {
-            return;
-        }
-
-        $this->deleteEmbeddedImages($value);
-    }
-
-    protected function deleteEmbeddedImages(?string $content): void
-    {
-        if (! $content) {
-            return;
-        }
-
-        preg_match_all('#/storage/([^"\']+)#', $content, $matches);
-
-        foreach ($matches[1] as $relativePath) {
-            if (Storage::disk('public')->exists($relativePath)) {
-                Storage::disk('public')->delete($relativePath);
-            }
-        }
     }
 
     protected function normalizePricing(string $pricing): string

@@ -16,7 +16,7 @@ class UpdateToolRequest extends FormRequest
     {
         return [
             'name' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
+            'description' => 'sometimes|nullable|string',
             'slug' => [
                 'sometimes',
                 'nullable',

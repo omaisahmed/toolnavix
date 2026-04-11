@@ -17,6 +17,8 @@ class Post extends Model
         'tags',
         'excerpt',
         'image',
+        'image_url',
+        'image_public_id',
         'content',
         'meta_title',
         'meta_description',
