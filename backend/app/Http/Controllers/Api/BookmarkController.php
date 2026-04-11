@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bookmark;
-use App\Http\Requests\StoreBookmarkRequest;
 use Illuminate\Http\Request;
 
 class BookmarkController extends Controller
@@ -16,7 +15,7 @@ class BookmarkController extends Controller
         return response()->json($bookmarks);
     }
 
-    public function store(StoreBookmarkRequest $request)
+    public function store(Request $request)
     {
         $user = $request->user();
 

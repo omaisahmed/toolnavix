@@ -28,50 +28,54 @@ function toShortDescription(value?: string, max = 120) {
 }
 
 export default function BrowseAllPageClient() {
-  const [tools, setTools] = useState<Tool[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showLoadingState, setShowLoadingState] = useState(false);
-  const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
-  const [category, setCategory] = useState('');
-  const [categoryInput, setCategoryInput] = useState('');
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-  const [pricing, setPricing] = useState('');
-  const [rating, setRating] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [savedToolIds, setSavedToolIds] = useState<Map<number, number>>(new Map());
-
   const searchParams = useSearchParams();
   const urlSearch = searchParams?.get('search') ?? '';
   const urlCategory = searchParams?.get('category') ?? '';
   const urlPricing = searchParams?.get('pricing') ?? '';
   const urlRating = searchParams?.get('rating') ?? '';
 
-  useEffect(() => {
-    if (urlSearch && !searchInput) {
-      setSearchInput(urlSearch);
-    }
-  }, [urlSearch, searchInput]);
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showLoadingState, setShowLoadingState] = useState(false);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [category, setCategory] = useState(urlCategory);
+  const [categoryInput, setCategoryInput] = useState('');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [pricing, setPricing] = useState(urlPricing);
+  const [rating, setRating] = useState(urlRating);
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const [search, setSearch] = useState(urlSearch);
+  const [savedToolIds, setSavedToolIds] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
-    if (urlCategory && !category) {
-      setCategory(urlCategory);
-    }
-  }, [urlCategory, category]);
+    setSearchInput(urlSearch);
+    setSearch(urlSearch);
+    setPage(1); // Reset to page 1 when search changes
+  }, [urlSearch]);
 
   useEffect(() => {
-    if (urlPricing && !pricing) {
-      setPricing(urlPricing);
+    setCategory(urlCategory);
+    setPage(1); // Reset to page 1 when category changes
+    // Only set categoryInput if there's a URL category, otherwise keep user's selection
+    if (urlCategory) {
+      const cat = categories.find((c) => c.slug === urlCategory);
+      if (cat) {
+        setCategoryInput(cat.name);
+      }
     }
-  }, [urlPricing, pricing]);
+  }, [urlCategory, categories]);
 
   useEffect(() => {
-    if (urlRating && !rating) {
-      setRating(urlRating);
-    }
-  }, [urlRating, rating]);
+    setPricing(urlPricing);
+    setPage(1); // Reset to page 1 when pricing changes
+  }, [urlPricing]);
+
+  useEffect(() => {
+    setRating(urlRating);
+    setPage(1); // Reset to page 1 when rating changes
+  }, [urlRating]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput), 300);
@@ -140,7 +144,7 @@ export default function BrowseAllPageClient() {
               <div className="relative">
                 <input
                   type="text"
-                  value={categoryInput || categories.find((c) => c.slug === category)?.name || ''}
+                  value={categoryInput || (category && categories.find((c) => c.slug === category)?.name) || ''}
                   onChange={(e) => {
                     setPage(1);
                     setCategory('');
@@ -156,19 +160,27 @@ export default function BrowseAllPageClient() {
                   <div className="absolute top-full z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {categories
                       .filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase()))
-                      .map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setCategory(c.slug);
-                            setCategoryInput('');
-                            setCategoryDropdownOpen(false);
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-slate-50"
-                        >
-                          {c.name}
-                        </button>
-                      ))}
+                      .length > 0 ? (
+                      categories
+                        .filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase()))
+                        .map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setCategory(c.slug);
+                              setCategoryInput(c.name);
+                              setCategoryDropdownOpen(false);
+                            }}
+                            className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
+                          >
+                            {c.name}
+                          </button>
+                        ))
+                    ) : (
+                      <p className="px-3 py-2 text-xs text-slate-500">No matching categories</p>
+                    )}
                   </div>
                 )}
               </div>
