@@ -801,6 +801,7 @@ function DashboardPageContent() {
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [formModal, setFormModal] = useState<FormModalState>({ isOpen: false, type: null, mode: 'create' });
   const [formData, setFormData] = useState<any>({});
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Bulk delete state
   const [selectedTools, setSelectedTools] = useState<Set<number>>(new Set());
@@ -810,6 +811,21 @@ function DashboardPageContent() {
 
   // Initialize with cache only after hydration
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = window.localStorage.getItem('toolnavix_token');
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (!authChecked) return;
+    if (typeof window === 'undefined') return;
+
     setHydrated(true);
     
     // Check for refresh item from form submission first
@@ -881,7 +897,7 @@ function DashboardPageContent() {
 
     // Otherwise, load data normally (with loading spinner only if no cache)
     loadData({ showLoading: !cachedData.tools });
-  }, []);
+  }, [authChecked]);
 
   const statusText = (tool: Tool) => {
     if (tool.is_top) return 'Top AI';
@@ -1730,6 +1746,9 @@ function DashboardPageContent() {
     return categories.filter((category) => category.name.toLowerCase().includes(query));
   }, [categories, postForm.category]);
 
+  if (!authChecked) {
+    return null;
+  }
 
   return (
     <>
