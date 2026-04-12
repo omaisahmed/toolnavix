@@ -52,16 +52,16 @@ export default async function GuidesPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 py-10">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
         <div className="container space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">Learning Hub</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Guides</h1>
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">AI Search Directory Engine</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Guides</h1>
             <p className="mt-2 text-sm text-slate-600">Follow hands-on walkthroughs to get better results from AI tools.</p>
           </section>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {guides.map((guide) => (
-              <article key={guide.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+              <article key={guide.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
                 <div className="aspect-[16/9] bg-slate-100">
                   {guide.image ? (
                     <img src={guide.image} alt={guide.title} className="h-full w-full object-cover" />

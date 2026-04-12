@@ -86,11 +86,11 @@ export default function ComparePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white py-10">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.15),_transparent_32%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
       <div className="container space-y-6">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">Tool Comparison</p>
-          <h1 className="mt-3 text-3xl font-bold text-slate-900">Compare AI Tools Side by Side</h1>
+        <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">AI Search Directory Engine</p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Compare AI Tools Side by Side</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
             Pick up to 3 tools and compare pricing, ratings, and positioning in one glance.
           </p>

@@ -37,8 +37,9 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 py-10">
-        <article className="container rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
+        <article className="container rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-xl shadow-slate-200/60 backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">AI Search Directory Engine</p>
           <h1 className="text-3xl font-bold text-slate-900">{post.title}</h1>
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-slate-500">

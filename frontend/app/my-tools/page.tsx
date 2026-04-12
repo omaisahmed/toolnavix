@@ -77,9 +77,13 @@ export default function MyToolsPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 py-10">
-        <div className="container">
-          <h1 className="mb-6 text-3xl font-bold text-slate-900">My Tools</h1>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
+        <div className="container space-y-6">
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Personal Workspace</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">My Tools</h1>
+            <p className="mt-2 text-sm text-slate-600">Your saved AI stack, ready to launch and manage.</p>
+          </section>
           {showLoadingState ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-64 animate-pulse rounded-2xl bg-slate-200" />)}
@@ -90,7 +94,7 @@ export default function MyToolsPage() {
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {saved.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
                     <Link href={`/tools/${item.tool?.slug}`} className="block aspect-[16/9] overflow-hidden rounded-lg bg-slate-100" aria-label={`Open ${item.tool?.name || 'tool'}`}>
                       {item.tool?.logo ? (
                         <img src={item.tool.logo} alt={item.tool.name} className="h-full w-full object-cover" />

@@ -49,12 +49,16 @@ export default function CategoryToolsPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 py-10">
-        <div className="container">
-          <h1 className="mb-6 text-3xl font-bold text-slate-900">{categoryName} Tools</h1>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_28%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
+        <div className="container space-y-6">
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Category Cluster</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">{categoryName} Tools</h1>
+            <p className="mt-2 text-sm text-slate-600">Browse the latest tools in this category and jump into full profiles.</p>
+          </section>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tools.map((tool) => (
-              <article key={tool.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <article key={tool.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
                 <Link href={`/tools/${tool.slug}`} className="block aspect-[16/9] bg-slate-100" aria-label={`Open ${tool.name}`}>
                   {tool.logo ? (
                     <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />

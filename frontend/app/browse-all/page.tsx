@@ -121,10 +121,11 @@ function BrowseAllPageComponent() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 py-10">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
         <div className="container space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h1 className="text-3xl font-bold text-slate-900">Browse All Tools</h1>
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">AI Search Directory Engine</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Browse All Tools</h1>
             <div className="mt-5 grid gap-3 md:grid-cols-4">
               <input value={searchInput} onChange={(e) => { setPage(1); setSearchInput(e.target.value); }} placeholder="Search tools..." className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
               <div className="relative">
@@ -194,7 +195,7 @@ function BrowseAllPageComponent() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tools.map((tool) => (
-                <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
                   <div className="relative aspect-[16/9] bg-slate-100">
                     <SaveToolButton toolId={tool.id} variant="overlay" />
                     <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>

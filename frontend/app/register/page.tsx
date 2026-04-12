@@ -103,8 +103,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.16),_transparent_40%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.12),_transparent_42%),linear-gradient(to_bottom,_#f8fafc,_#ffffff)] px-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-50/80 to-transparent" />
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-xl shadow-slate-200/60 backdrop-blur">
         <div className="mb-6 flex flex-col items-center text-center">
           <Link href="/" className="mb-4 inline-flex items-center justify-center">
             {settings.logo_url ? (
@@ -115,8 +116,9 @@ export default function RegisterPage() {
               </div>
             )}
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Create account</h1>
-          <p className="mt-2 text-sm text-slate-500">Save tools and access your personalized dashboard.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">AI Search Directory Engine</p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Create account</h1>
+          <p className="mt-2 text-sm text-slate-500">Save tools and build your personalized AI discovery workspace.</p>
         </div>
 
         {error && <p className="rounded-lg bg-rose-100 p-2 text-sm text-rose-700">{error}</p>}
@@ -128,7 +130,7 @@ export default function RegisterPage() {
             placeholder="Full name"
             required
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
           <input
             value={form.email}
@@ -136,7 +138,7 @@ export default function RegisterPage() {
             placeholder="Email"
             required
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
           <input
             value={form.password}
@@ -144,7 +146,7 @@ export default function RegisterPage() {
             placeholder="Password"
             required
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
           <input
             value={form.password_confirmation}
@@ -152,12 +154,12 @@ export default function RegisterPage() {
             placeholder="Confirm password"
             required
             onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
           >
             {loading ? 'Creating account...' : 'Register'}
           </button>
