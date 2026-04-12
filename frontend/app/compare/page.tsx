@@ -56,6 +56,7 @@ export default function ComparePage() {
     .map((id) => tools.find((tool) => String(tool.id) === id))
     .filter((tool): tool is Tool => Boolean(tool));
   const selected = selectedTools;
+  const selectedCount = selected.length;
 
   const updateSlot = (index: number, nextId: string) => {
     setSelectedIds((prev) => {
@@ -86,26 +87,47 @@ export default function ComparePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.15),_transparent_32%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.17),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.11),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_45%,_#f1f5f9)] py-10">
       <div className="container space-y-6">
-        <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">AI Search Directory Engine</p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Compare AI Tools Side by Side</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            Pick up to 3 tools and compare pricing, ratings, and positioning in one glance.
-          </p>
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur md:p-8">
+          <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-start">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                <i className="bi bi-bezier2" aria-hidden="true" />
+                AI Tool Search Directory Engine
+              </p>
+              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Compare AI Tools Side by Side</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                Pick up to 3 tools and instantly compare pricing, ratings, category fit, and launch readiness.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Tools Indexed</p>
+                <p className="mt-1 text-2xl font-black text-slate-900">{tools.length}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Compared</p>
+                <p className="mt-1 text-2xl font-black text-slate-900">{selectedCount}/3</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Mode</p>
+                <p className="mt-1 text-sm font-semibold text-indigo-700">Live Compare</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {error && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
         )}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="relative z-30 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm backdrop-blur">
           <div className="grid gap-3 md:grid-cols-3">
             {[0, 1, 2].map((slot) => (
-              <div key={slot}>
-                <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Tool Slot {slot + 1}
+              <div key={slot} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Tool Slot {slot + 1} {selectedIds[slot] ? '- Ready' : '- Select'}
                 </label>
                 <div className="relative mt-2">
                   <input
@@ -114,10 +136,10 @@ export default function ComparePage() {
                     onFocus={() => setActiveSlot(slot)}
                     onBlur={() => setTimeout(() => setActiveSlot((prev) => (prev === slot ? null : prev)), 120)}
                     placeholder="Search tool by name..."
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                   />
                   {activeSlot === slot && (
-                    <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                    <div className="absolute z-[120] mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                       {tools
                         .filter((tool) => tool.name.toLowerCase().includes((searchTerms[slot] || '').toLowerCase()))
                         .slice(0, 10)
@@ -148,9 +170,12 @@ export default function ComparePage() {
 
           <section className="grid gap-4 md:grid-cols-3">
             {selected.map((tool, index) => (
-              <article key={`${tool.id}-${index}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <article key={`${tool.id}-${index}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
               <div className="relative aspect-[16/9] bg-slate-100">
                 <SaveToolButton toolId={tool.id} variant="overlay" />
+                <span className="absolute left-3 top-3 z-10 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                  Slot {index + 1}
+                </span>
                 <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>
                   {tool.logo ? (
                     <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
@@ -162,17 +187,25 @@ export default function ComparePage() {
               <div className="p-4">
                 <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-xl font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
                 <p className="mt-1 text-sm text-slate-500">{tool.category?.name || 'Uncategorized'}</p>
-                <p className="mt-3 text-sm font-semibold text-indigo-700">{tool.pricing || '-'}</p>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{tool.pricing || '-'}</p>
+                  <p className="text-xs font-semibold text-slate-500">{typeof tool.rating === 'number' ? `${tool.rating} / 5` : '-'}</p>
+                </div>
               </div>
             </article>
           ))}
+          {selected.length === 0 && (
+            <div className="md:col-span-3 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+              Select tools from the slots above to start comparing.
+            </div>
+          )}
         </section>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-4">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <table className="min-w-full table-auto text-left text-sm">
             <thead>
               <tr>
-                <th className="px-3 py-2">Feature</th>
+                <th className="sticky left-0 bg-white px-3 py-2 font-semibold text-slate-800">Feature</th>
                   {selected.map((tool, index) => (
                     <th key={`head-${tool.id}-${index}`} className="px-3 py-2 font-semibold text-slate-700">{tool.name}</th>
                   ))}
@@ -194,13 +227,13 @@ export default function ComparePage() {
             </tbody>
             <tbody>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Pricing</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Pricing</td>
                 {selected.map((tool, index) => (
                   <td key={`pricing-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">{tool.pricing || '-'}</td>
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Rating</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Rating</td>
                 {selected.map((tool, index) => (
                   <td key={`rating-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">
                     {typeof tool.rating === 'number' ? `${tool.rating} / 5` : '-'}
@@ -208,31 +241,31 @@ export default function ComparePage() {
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Category</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Category</td>
                 {selected.map((tool, index) => (
                   <td key={`category-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">{tool.category?.name || '-'}</td>
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Featured</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Featured</td>
                 {selected.map((tool, index) => (
                   <td key={`featured-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">{tool.featured ? 'Yes' : 'No'}</td>
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Trending</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Trending</td>
                 {selected.map((tool, index) => (
                   <td key={`trending-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">{tool.trending ? 'Yes' : 'No'}</td>
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Just Landed</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Just Landed</td>
                 {selected.map((tool, index) => (
                   <td key={`just-landed-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">{tool.just_landed ? 'Yes' : 'No'}</td>
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className="px-3 py-2 font-medium text-slate-600">Visit</td>
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-600">Visit</td>
                 {selected.map((tool, index) => (
                   <td key={`visit-${tool.id}-${index}`} className="px-3 py-2 text-slate-700">
                     {tool.visit_url ? (
