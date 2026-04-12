@@ -206,9 +206,6 @@ export default function BrowseAllPageClient() {
                       <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-700">{tool.category?.name || 'Uncategorized'}</span>
                       <span className="font-semibold text-indigo-700">{tool.pricing}</span>
                     </div>
-                    <div className="mt-3 flex justify-end">
-                        <SaveToolButton toolId={tool.id} variant="overlay" />
-                    </div>
                   </div>
                 </article>
               ))}
