@@ -40,19 +40,19 @@ function toShortDescription(value?: string, max = 120): string {
 
 function ToolCard({ tool, badge, savedId }: { tool: HomepageTool; badge: string; savedId?: number | null }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+    <article className="group overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-sm transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
         <SaveToolButton toolId={tool.id} variant="overlay" initialSavedId={savedId ?? null} />
+        <span className="absolute left-3 top-3 z-10 rounded-full border border-white/60 bg-white/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
+          {badge}
+        </span>
         <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>
           {tool.logo ? (
-            <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+            <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
           ) : (
             <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
           )}
         </Link>
-        {/* <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow">
-          {badge}
-        </span> */}
       </div>
 
       <div className="p-4">
@@ -80,13 +80,10 @@ function ToolCard({ tool, badge, savedId }: { tool: HomepageTool; badge: string;
             {tool.category?.name || 'Uncategorized'}
           </span>
           <div className="text-right">
-            {/* <p className="text-xs text-slate-500">{tool.rating.toFixed(1)} / 5</p> */}
+            <p className="text-xs text-slate-500">{tool.rating.toFixed(1)} / 5</p>
             <p className="text-sm font-semibold text-indigo-700">{tool.pricing}</p>
           </div>
         </div>
-        {/* <Link href={`/tools/${tool.slug}`} className="mt-4 inline-block text-sm font-semibold text-indigo-600 hover:underline">
-          View details
-        </Link> */}
       </div>
     </article>
   );
@@ -110,8 +107,11 @@ function ToolSection({
   return (
     <section className="container pb-12">
       <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
-        <Link href={browseHref} className="text-indigo-600 hover:underline">{browseLabel}</Link>
+        <h2 className="text-2xl font-black tracking-tight text-slate-900">{title}</h2>
+        <Link href={browseHref} className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+          {browseLabel}
+          <i className="bi bi-arrow-right" aria-hidden="true" />
+        </Link>
       </div>
 
       {tools.length > 0 ? (
@@ -168,6 +168,17 @@ export default function Home() {
     .filter((category) => (categoryToolCounts.get(category.id) ?? 0) > 0)
     .sort((a, b) => (categoryToolCounts.get(b.id) ?? 0) - (categoryToolCounts.get(a.id) ?? 0))
     .slice(0, 8);
+  const quickSearches = [
+    'ai video editor',
+    'ai code assistant',
+    'ai image generator',
+    'ai meeting notes',
+    'ai resume builder',
+    'ai voice cloning',
+  ];
+  const featuredCount = tools.filter((tool) => tool.featured).length;
+  const trendingCount = tools.filter((tool) => tool.trending).length;
+  const justLandedCount = tools.filter((tool) => tool.just_landed).length;
 
   useEffect(() => {
     async function loadHomepageData() {
@@ -213,30 +224,91 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.14),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_32%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)]">
       <Header />
 
-      <section className="container py-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">{heroBadge}</p>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">{heroTitle}</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">{heroSubtitle}</p>
+      <section className="container pb-12 pt-16">
+        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+          <div className="rounded-3xl border border-slate-200 bg-white/90 p-7 shadow-xl shadow-slate-200/60 backdrop-blur sm:p-9">
+            <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+              <i className="bi bi-cpu" aria-hidden="true" />
+              {heroBadge}
+            </p>
+            <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">{heroTitle}</h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">{heroSubtitle}</p>
 
-          <form onSubmit={handleSearch} className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={heroSearchPlaceholder}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-            />
-            <button type="submit" className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap">{heroSearchButtonText}</button>
-          </form>
+            <form onSubmit={handleSearch} className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="relative w-full">
+                <i className="bi bi-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={heroSearchPlaceholder}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-11 py-3 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap">
+                {heroSearchButtonText}
+                <i className="bi bi-arrow-up-right" aria-hidden="true" />
+              </button>
+            </form>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-slate-600">
-            {displayHeroTags.map((tag) => (
-              <span key={tag} className="rounded-full bg-slate-100 px-3 py-1">{tag}</span>
-            ))}
+            <div className="mt-5 flex flex-wrap gap-2 text-xs">
+              {quickSearches.map((query) => (
+                <Link key={query} href={`/tools?search=${encodeURIComponent(query)}`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700">
+                  {query}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-600">
+              {displayHeroTags.map((tag) => (
+                <span key={tag} className="rounded-full bg-slate-100 px-3 py-1">{tag}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Directory Snapshot</p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Tools</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{tools.length}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Categories</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{categories.length}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Trending</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{trendingCount}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Just landed</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{justLandedCount}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Search Modes</p>
+              <div className="mt-4 space-y-2">
+                <Link href="/browse-all?sort=trending" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
+                  <span>Trending Discovery</span>
+                  <span className="text-xs text-slate-500">{trendingCount} tools</span>
+                </Link>
+                <Link href="/browse-all?pricing=free" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
+                  <span>Free Stack Finder</span>
+                  <span className="text-xs text-slate-500">Cost-friendly</span>
+                </Link>
+                <Link href="/featured-ai-tools" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
+                  <span>Featured Signals</span>
+                  <span className="text-xs text-slate-500">{featuredCount} curated</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -283,36 +355,46 @@ export default function Home() {
       )}
 
       <section className="container pb-12">
-          <h2 className="mb-5 text-2xl font-bold text-slate-900">Explore Top AI Categories</h2>
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">Explore Top AI Categories</h2>
+            <Link href="/categories" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View all categories</Link>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {topCategories.map((category) => (
             <Link
               key={category.slug}
               href={`/browse-all?category=${category.slug}`}
-              className="card flex items-center gap-3 text-left font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-600"
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-600"
             >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                {category.icon ? (
-                  <i className={category.icon} aria-hidden="true" />
-                ) : (
-                  <i className="bi bi-grid" aria-hidden="true" />
-                )}
-              </span>
-              <span>{category.name}</span>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  {category.icon ? (
+                    <i className={category.icon} aria-hidden="true" />
+                  ) : (
+                    <i className="bi bi-grid" aria-hidden="true" />
+                  )}
+                </span>
+                <div>
+                  <span className="block">{category.name}</span>
+                  <span className="text-xs font-medium text-slate-500">{categoryToolCounts.get(category.id) ?? 0} tools</span>
+                </div>
+              </div>
+              <i className="bi bi-arrow-right text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" aria-hidden="true" />
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="container mb-16 rounded-3xl bg-indigo-600 p-10 text-white shadow-xl">
+      <section className="container mb-16 rounded-3xl bg-[linear-gradient(120deg,_#4f46e5,_#2563eb,_#0f766e)] p-10 text-white shadow-xl">
         <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
           <div>
-            <h2 className="text-3xl font-bold">Start scaling your AI workflow today</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-100">AI Search Directory Engine</p>
+            <h2 className="mt-2 text-3xl font-black">Build your AI stack faster with smarter discovery</h2>
             <p className="mt-3 text-slate-100">Sign up to save tools, build collections and discover trends in minutes.</p>
           </div>
           <div className="flex gap-3">
-            <Link href="/register" className="rounded-xl bg-white px-6 py-3 font-semibold text-indigo-700">Create account</Link>
-            <Link href="/login" className="rounded-xl border border-white px-6 py-3 text-white">Log in</Link>
+            <Link href="/register" className="rounded-xl bg-white px-6 py-3 font-semibold text-indigo-700 transition hover:bg-indigo-50">Create account</Link>
+            <Link href="/login" className="rounded-xl border border-white/80 px-6 py-3 text-white transition hover:bg-white/10">Log in</Link>
           </div>
         </div>
       </section>
