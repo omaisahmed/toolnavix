@@ -49,7 +49,7 @@ export default function RegisterPage() {
         });
 
         if (response.ok) {
-          router.replace('/my-tools');
+          router.replace('/saved-tools');
           return;
         }
       } catch {
@@ -90,7 +90,7 @@ export default function RegisterPage() {
         window.localStorage.setItem('toolnavix_token', data.token);
       }
 
-      router.push('/my-tools');
+      router.push('/saved-tools');
     } catch {
       setError('Unexpected error. Check network.');
     } finally {

@@ -117,9 +117,9 @@ export default function BrowseAllPageClient() {
       <Header />
       <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_40%,_#f1f5f9)] py-10">
         <div className="container space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
+          <section className="relative z-30 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">AI Search Directory Engine</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Browse All Tools</h1>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">All AI Tools</h1>
             <div className="mt-5 grid gap-3 md:grid-cols-4">
               <input value={searchInput} onChange={(e) => { setPage(1); setSearchInput(e.target.value); }} placeholder="Search tools..." className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
               <div className="relative">
@@ -138,7 +138,7 @@ export default function BrowseAllPageClient() {
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 />
                 {categoryDropdownOpen && (
-                  <div className="absolute top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute top-full z-[100] mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {categories
                       .filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase()))
                       .length > 0 ? (
@@ -184,7 +184,7 @@ export default function BrowseAllPageClient() {
           {loading && showLoadingState ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">Loading tools...</div>
           ) : tools.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tools.map((tool) => (
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
                   <div className="relative aspect-[16/9] bg-slate-100">

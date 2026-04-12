@@ -9,7 +9,7 @@ export default function ToolsPageClient() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
-    router.replace(`/browse-all?${params.toString()}`);
+    router.replace(`/all-ai-tools?${params.toString()}`);
   }, [router, searchParams]);
 
   return null;

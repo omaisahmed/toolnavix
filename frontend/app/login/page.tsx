@@ -44,7 +44,7 @@ export default function LoginPage() {
         });
 
         if (response.ok) {
-          router.replace('/my-tools');
+          router.replace('/saved-tools');
           return;
         }
       } catch {
@@ -78,7 +78,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       window.localStorage.setItem('toolnavix_token', data.token);
-      router.push('/my-tools');
+      router.push('/saved-tools');
     } catch (err) {
       setError('Unexpected error. Check network.');
     }

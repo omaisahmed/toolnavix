@@ -62,7 +62,7 @@ export default function MyToolsPage() {
   const handleRemove = async (savedId: number) => {
     try {
       await removeSavedTool(savedId);
-      toast.success('Removed from My Tools');
+      toast.success('Removed from Saved Tools');
       const remainingOnPage = saved.length - 1;
       if (remainingOnPage <= 0 && page > 1) {
         setPage((prev) => prev - 1);
@@ -81,7 +81,7 @@ export default function MyToolsPage() {
         <div className="container space-y-6">
           <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60 backdrop-blur">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Personal Workspace</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">My Tools</h1>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Saved Tools</h1>
             <p className="mt-2 text-sm text-slate-600">Your saved AI stack, ready to launch and manage.</p>
           </section>
           {showLoadingState ? (

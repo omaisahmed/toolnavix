@@ -16,7 +16,7 @@ export default function Header() {
   const currentPath = pathname ?? '';
 
   const navItems = [
-    { href: '/browse-all', label: 'Browse All' },
+    { href: '/all-ai-tools', label: 'All AI Tools' },
     { href: '/featured-ai-tools', label: 'Featured AI Tools' },
     { href: '/categories', label: 'Categories' },
     { href: '/top-ai-tools', label: 'Top AI Tools' },
@@ -84,8 +84,8 @@ export default function Header() {
                   {item.label}
                 </Link>
               ))}
-              <Link href="/my-tools" className={linkClass('/my-tools')}>
-                My Tools
+              <Link href="/saved-tools" className={linkClass('/saved-tools')}>
+                Saved Tools
               </Link>
             </nav>
 
@@ -98,7 +98,7 @@ export default function Header() {
                 <>
                   <button
                     type="button"
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:border-indigo-300 hover:text-indigo-600 ${currentPath === '/my-tools' ? 'text-indigo-600' : 'text-slate-600'}`}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:border-indigo-300 hover:text-indigo-600 ${currentPath === '/saved-tools' ? 'text-indigo-600' : 'text-slate-600'}`}
                     aria-label="Open profile menu"
                     title="Profile menu"
                   >
@@ -109,11 +109,11 @@ export default function Header() {
                     <div className="absolute right-0 top-full z-50 pt-2">
                       <div className="min-w-[160px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                         <Link
-                          href="/my-tools"
+                          href="/saved-tools"
                           className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-indigo-600"
                           onClick={() => setShowProfileMenu(false)}
                         >
-                          My Tools
+                          Saved Tools
                         </Link>
                         <button
                           type="button"
@@ -142,7 +142,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-2 md:hidden">
             <Link
-              href={isLoggedIn ? '/my-tools' : '/login'}
+              href={isLoggedIn ? '/saved-tools' : '/login'}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
               aria-label={isLoggedIn ? 'Open saved tools' : 'Go to login'}
               title={isLoggedIn ? 'Saved tools' : 'Login'}
@@ -168,8 +168,8 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link href="/my-tools" className={`block ${linkClass('/my-tools')}`} onClick={() => setIsOpen(false)}>
-              My Tools
+            <Link href="/saved-tools" className={`block ${linkClass('/saved-tools')}`} onClick={() => setIsOpen(false)}>
+              Saved Tools
             </Link>
             {isLoggedIn ? (
               <button

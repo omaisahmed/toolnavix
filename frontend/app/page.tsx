@@ -299,7 +299,7 @@ export default function Home() {
                   <span>Top AI Tools</span>
                   <span className="text-xs text-slate-500">{trendingCount} tools</span>
                 </Link>
-                <Link href="/browse-all?pricing=free" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
+                <Link href="/all-ai-tools?pricing=free" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
                   <span>Free Stack Finder</span>
                   <span className="text-xs text-slate-500">Cost-friendly</span>
                 </Link>
@@ -363,7 +363,7 @@ export default function Home() {
           {topCategories.map((category) => (
             <Link
               key={category.slug}
-              href={`/browse-all?category=${category.slug}`}
+              href={`/all-ai-tools?category=${category.slug}`}
               className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-600"
             >
               <div className="flex items-center gap-3">

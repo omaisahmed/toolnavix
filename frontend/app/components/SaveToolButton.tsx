@@ -122,7 +122,7 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
             detail: { toolId, savedId: null },
           }),
         );
-        toast.success('Removed from My Tools');
+        toast.success('Removed from Saved Tools');
       } else {
         const response = await saveTool(toolId);
         setSavedId(response.id ?? null);
@@ -135,7 +135,7 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
             detail: { toolId, savedId: response.id ?? null },
           }),
         );
-        toast.success('Saved to My Tools');
+        toast.success('Saved to Saved Tools list');
       }
     } catch {
       toast.error('Unable to update saved tools');
@@ -174,7 +174,7 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
           : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600'
       } transition`}
     >
-      {savedId ? '✓ Saved to My Tools' : 'Save Tool'}
+      {savedId ? '✓ Saved in Saved Tools' : 'Save Tool'}
     </button>
   );
 }
