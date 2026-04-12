@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tool;
+use App\Models\Category;
 use App\Models\ToolView;
 use App\Services\ToolService;
 use App\Http\Requests\StoreToolRequest;
@@ -23,9 +24,17 @@ class ToolController extends Controller
         $query = Tool::with('category');
 
         if ($request->filled('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
+            $categorySlug = $request->category;
+            // Check if category exists first
+            $categoryExists = Category::where('slug', $categorySlug)->exists();
+            if ($categoryExists) {
+                $query->whereHas('category', function ($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            } else {
+                // If category doesn't exist, return no results
+                $query->where('id', 0);
+            }
         }
 
         if ($request->filled('pricing')) {

@@ -47,6 +47,7 @@ export default function BrowseAllPageClient() {
   const [rating, setRating] = useState(urlRating);
   const [searchInput, setSearchInput] = useState(urlSearch);
   const [search, setSearch] = useState(urlSearch);
+  const selectedCategoryName = category ? categories.find((c) => c.slug === category)?.name || category : '';
 
   useEffect(() => {
     setSearchInput(urlSearch);
@@ -187,11 +188,13 @@ export default function BrowseAllPageClient() {
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="relative aspect-[16/9] bg-slate-100">
                     <SaveToolButton toolId={tool.id} variant="overlay" />
-                    {tool.logo ? (
-                      <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
-                    )}
+                    <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>
+                      {tool.logo ? (
+                        <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                      )}
+                    </Link>
                   </div>
                   <div className="p-4">
                     <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-xl font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
@@ -208,7 +211,11 @@ export default function BrowseAllPageClient() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">No tools found.</div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+              {selectedCategoryName
+                ? `No tools found in "${selectedCategoryName}" yet.`
+                : 'No tools found.'}
+            </div>
           )}
 
           <div className="flex items-center justify-center gap-3">

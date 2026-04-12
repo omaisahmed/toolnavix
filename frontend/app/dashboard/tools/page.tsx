@@ -21,6 +21,11 @@ type Tool = {
   is_top?: boolean;
   visit_url: string | null;
   logo?: string | null;
+  logo_alt?: string | null;
+  logo_title?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
   features?: string[];
   pros?: string[];
   cons?: string[];
@@ -58,6 +63,11 @@ function ToolFormContent() {
     is_top: false,
     logo: '',
     remove_logo: false,
+    logo_alt: '',
+    logo_title: '',
+    meta_title: '',
+    meta_description: '',
+    meta_keywords: '',
     features: '',
     pros: '',
     cons: '',
@@ -104,6 +114,11 @@ function ToolFormContent() {
               is_top: foundTool.is_top || false,
               logo: foundTool.logo || '',
               remove_logo: false,
+              logo_alt: foundTool.logo_alt || '',
+              logo_title: foundTool.logo_title || '',
+              meta_title: foundTool.meta_title || '',
+              meta_description: foundTool.meta_description || '',
+              meta_keywords: foundTool.meta_keywords || '',
               features: typeof foundTool.features === 'string' ? (JSON.parse(foundTool.features || '[]') || []).join(', ') : (foundTool.features || []).join(', '),
               pros: typeof foundTool.pros === 'string' ? (JSON.parse(foundTool.pros || '[]') || []).join(', ') : (foundTool.pros || []).join(', '),
               cons: typeof foundTool.cons === 'string' ? (JSON.parse(foundTool.cons || '[]') || []).join(', ') : (foundTool.cons || []).join(', '),
@@ -159,6 +174,11 @@ function ToolFormContent() {
         payload.append('features', JSON.stringify(featuresArray));
         payload.append('pros', JSON.stringify(prosArray));
         payload.append('cons', JSON.stringify(consArray));
+        payload.append('logo_alt', form.logo_alt || '');
+        payload.append('logo_title', form.logo_title || '');
+        payload.append('meta_title', form.meta_title || '');
+        payload.append('meta_description', form.meta_description || '');
+        payload.append('meta_keywords', form.meta_keywords || '');
         if (form.remove_logo) {
           payload.append('remove_logo', '1');
         }
@@ -179,6 +199,11 @@ function ToolFormContent() {
           features: JSON.stringify(featuresArray),
           pros: JSON.stringify(prosArray),
           cons: JSON.stringify(consArray),
+          logo_alt: form.logo_alt || '',
+          logo_title: form.logo_title || '',
+          meta_title: form.meta_title || '',
+          meta_description: form.meta_description || '',
+          meta_keywords: form.meta_keywords || '',
         };
         if (form.description != null) {
           payload.description = form.description;
@@ -417,6 +442,72 @@ function ToolFormContent() {
                   </button>
                 )}
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 2MB.</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+              <h2 className="mb-6 text-xl font-semibold text-slate-900">SEO Settings</h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Logo Alt Text</label>
+                  <input
+                    type="text"
+                    placeholder="Descriptive alt text for logo"
+                    value={form.logo_alt}
+                    onChange={(e) => setForm({ ...form, logo_alt: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Alt text for screen readers and SEO</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Logo Title</label>
+                  <input
+                    type="text"
+                    placeholder="Tooltip text for logo"
+                    value={form.logo_title}
+                    onChange={(e) => setForm({ ...form, logo_title: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Title attribute for hover tooltip</p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Meta Title</label>
+                <input
+                  type="text"
+                  placeholder="Custom page title for SEO"
+                  value={form.meta_title}
+                  onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
+                  maxLength={60}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+                <p className="mt-1 text-xs text-slate-500">{form.meta_title.length}/60 characters. Leave empty to use default.</p>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Meta Description</label>
+                <textarea
+                  placeholder="Brief description for search results"
+                  value={form.meta_description}
+                  onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
+                  maxLength={160}
+                  rows={2}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+                <p className="mt-1 text-xs text-slate-500">{form.meta_description.length}/160 characters. Leave empty to use default.</p>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Meta Keywords</label>
+                <input
+                  type="text"
+                  placeholder="keyword1, keyword2, keyword3"
+                  value={form.meta_keywords}
+                  onChange={(e) => setForm({ ...form, meta_keywords: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+                <p className="mt-1 text-xs text-slate-500">Comma-separated keywords for SEO</p>
               </div>
             </div>
 

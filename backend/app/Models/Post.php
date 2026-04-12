@@ -19,6 +19,8 @@ class Post extends Model
         'image',
         'image_url',
         'image_public_id',
+        'image_alt',
+        'image_title',
         'content',
         'meta_title',
         'meta_description',

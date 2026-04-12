@@ -16,6 +16,8 @@ type Post = {
   tags?: string[];
   excerpt?: string | null;
   image?: string | null;
+  image_alt?: string | null;
+  image_title?: string | null;
   content: string;
   meta_title?: string | null;
   meta_description?: string | null;
@@ -52,6 +54,8 @@ function ContentFormContent() {
     excerpt: '',
     image: '',
     remove_image: false,
+    image_alt: '',
+    image_title: '',
     content: '',
     meta_title: '',
     meta_description: '',
@@ -59,6 +63,26 @@ function ContentFormContent() {
   });
   const [postImageFile, setPostImageFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+
+  const resolveCategoryId = (rawCategory?: string | null): string => {
+    if (!rawCategory) return '';
+    if (categories.length === 0) return '';
+
+    const normalized = String(rawCategory).trim();
+    if (!normalized) return '';
+
+    const byId = categories.find((c) => String(c.id) === normalized);
+    if (byId) return String(byId.id);
+
+    const bySlug = categories.find((c) => String(c.slug || '').toLowerCase() === normalized.toLowerCase());
+    if (bySlug) return String(bySlug.id);
+
+    const byName = categories.find((c) => String(c.name || '').toLowerCase() === normalized.toLowerCase());
+    if (byName) return String(byName.id);
+
+    return '';
+  };
 
   useEffect(() => {
     Promise.all([
@@ -76,23 +100,28 @@ function ContentFormContent() {
           const posts = await fetchDashboardPosts({ per_page: '1000', '_t': String(cacheBuster) });
           const found = posts.data?.find((p) => String(p.id) === postId);
           if (found) {
+            const selectedCategoryId = resolveCategoryId(found.category);
+            const selectedCategory = categories.find((c) => String(c.id) === selectedCategoryId);
             setForm({
               title: found.title,
               slug: found.slug,
               type: found.type,
-              category: found.category || '',
+              category: selectedCategoryId,
               tags: typeof found.tags === 'string' ? found.tags : (Array.isArray(found.tags) ? found.tags.join(', ') : ''),
               excerpt: found.excerpt || '',
               image: found.image || '',
               remove_image: false,
-              content: found.content,
+              image_alt: found.image_alt || '',
+              image_title: found.image_title || '',
+              content: found.content || '',
               meta_title: found.meta_title || '',
               meta_description: found.meta_description || '',
               published: found.published,
             });
-            if (found.category) {
-              const cat = categories.find((c) => String(c.id) === String(found.category));
-              setCategoryInput(cat?.name || '');
+            if (selectedCategory) {
+              setCategoryInput(selectedCategory.name);
+            } else if (found.category) {
+              setCategoryInput(found.category);
             }
           } else {
             toast.error('Post not found');
@@ -107,10 +136,11 @@ function ContentFormContent() {
       };
       loadPost();
     }
-  }, [postId]);
+  }, [postId, categories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     setSubmitting(true);
     try {
       const tagsArray = form.tags.split(',').map((t) => t.trim()).filter(Boolean);
@@ -129,6 +159,8 @@ function ContentFormContent() {
         payload.append('content', form.content);
         payload.append('meta_title', form.meta_title);
         payload.append('meta_description', form.meta_description);
+        payload.append('image_alt', form.image_alt || '');
+        payload.append('image_title', form.image_title || '');
         payload.append('published', form.published ? '1' : '0');
         if (postImageFile) {
           payload.append('image', postImageFile);
@@ -147,6 +179,8 @@ function ContentFormContent() {
           content: form.content,
           meta_title: form.meta_title,
           meta_description: form.meta_description,
+          image_alt: form.image_alt || '',
+          image_title: form.image_title || '',
           published: form.published,
         };
       }
@@ -173,8 +207,13 @@ function ContentFormContent() {
         }
       }
       router.push('/dashboard?tab=Content');
-    } catch (error) {
-      toast.error(postId ? 'Failed to update post' : 'Failed to create post');
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+        toast.error('Please fix the validation errors below.');
+      } else {
+        toast.error(postId ? 'Failed to update post' : 'Failed to create post');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -251,20 +290,22 @@ function ContentFormContent() {
                     placeholder="Title"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                     required
                   />
+                  {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title[0]}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
                   <select
                     value={form.type}
                     onChange={(e) => setForm({ ...form, type: e.target.value as 'blog' | 'news' })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.type ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   >
                     <option value="blog">Blog</option>
                     <option value="news">AI News</option>
                   </select>
+                  {errors.type && <p className="mt-1 text-sm text-red-600">{errors.type[0]}</p>}
                 </div>
               </div>
 
@@ -276,9 +317,10 @@ function ContentFormContent() {
                     placeholder="Leave empty to auto-generate"
                     value={form.slug}
                     onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.slug ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   />
                   {!form.slug && <p className="mt-1 text-xs text-slate-500">If empty, will auto-generate from title</p>}
+                  {errors.slug && <p className="mt-1 text-sm text-red-600">{errors.slug[0]}</p>}
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Category *</label>
@@ -293,10 +335,11 @@ function ContentFormContent() {
                     onFocus={() => setCategoryDropdownOpen(true)}
                     onBlur={() => setTimeout(() => setCategoryDropdownOpen(false), 120)}
                     placeholder="Search category..."
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.category ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                     autoComplete="off"
                     required
                   />
+                  {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category[0]}</p>}
                   {categoryDropdownOpen && (
                     <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                       {categories.filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase())).length > 0 ? (
@@ -328,20 +371,22 @@ function ContentFormContent() {
                     placeholder="Tags (comma-separated)"
                     value={form.tags}
                     onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.tags ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   />
+                  {errors.tags && <p className="mt-1 text-sm text-red-600">{errors.tags[0]}</p>}
                 </div>
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Excerpt</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                 <textarea
-                  placeholder="Excerpt"
+                  placeholder="Description"
                   value={form.excerpt}
                   onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                  className={`w-full rounded-xl border px-4 py-3 ${errors.excerpt ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   rows={3}
                 />
+                {errors.excerpt && <p className="mt-1 text-sm text-red-600">{errors.excerpt[0]}</p>}
               </div>
               <div className="mt-6">
                 <label className="text-sm font-medium text-slate-700 mb-2">Post Image</label>
@@ -360,11 +405,41 @@ function ContentFormContent() {
                 </div>
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
               </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-medium text-slate-700 mb-2">Image SEO</label>
+                <div className="grid gap-4 sm:grid-cols-2 mt-2">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-2">Image Alt Text</label>
+                    <input
+                      type="text"
+                      placeholder="Descriptive alt text for image"
+                      value={form.image_alt}
+                      onChange={(e) => setForm({ ...form, image_alt: e.target.value })}
+                      className={`w-full rounded-xl border px-4 py-3 ${errors.image_alt ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Alt text for screen readers and SEO</p>
+                    {errors.image_alt && <p className="mt-1 text-sm text-red-600">{errors.image_alt[0]}</p>}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-2">Image Title</label>
+                    <input
+                      type="text"
+                      placeholder="Tooltip text for image"
+                      value={form.image_title}
+                      onChange={(e) => setForm({ ...form, image_title: e.target.value })}
+                      className={`w-full rounded-xl border px-4 py-3 ${errors.image_title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Title attribute for hover tooltip</p>
+                    {errors.image_title && <p className="mt-1 text-sm text-red-600">{errors.image_title[0]}</p>}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <h2 className="mb-6 text-xl font-semibold text-slate-900">Content</h2>
-              <RichTextEditor value={form.content} onChange={(content) => setForm({ ...form, content })} />
+              <RichTextEditor value={form.content} onChange={(content) => setForm({ ...form, content })} error={errors.content ? errors.content[0] : undefined} />
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
@@ -377,8 +452,9 @@ function ContentFormContent() {
                     placeholder="Meta Title"
                     value={form.meta_title}
                     onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.meta_title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   />
+                  {errors.meta_title && <p className="mt-1 text-sm text-red-600">{errors.meta_title[0]}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Meta Description</label>
@@ -387,8 +463,9 @@ function ContentFormContent() {
                     placeholder="Meta Description"
                     value={form.meta_description}
                     onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.meta_description ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   />
+                  {errors.meta_description && <p className="mt-1 text-sm text-red-600">{errors.meta_description[0]}</p>}
                 </div>
               </div>
               <div className="mt-6">

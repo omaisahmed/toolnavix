@@ -7,9 +7,16 @@ import { removeSavedTool, saveTool, fetchSavedTools } from '../lib/api';
 
 type SaveToolButtonProps = {
   toolId: number;
-  variant?: 'default' | 'overlay';
+  variant?: 'default' | 'overlay' | 'prominent';
   initialSavedId?: number | null;
 };
+
+type SavedToolsUpdatedDetail = {
+  toolId: number;
+  savedId: number | null;
+};
+
+const SAVED_TOOLS_UPDATED_EVENT = 'toolnavix:saved-tools-updated';
 
 // Global cache for saved tools - shared across all instances
 let cachedSavedTools: Map<number, number> | null = null;
@@ -21,6 +28,20 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(initialSavedId);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleSavedToolsUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<SavedToolsUpdatedDetail>;
+      if (customEvent.detail?.toolId !== toolId) return;
+      setSavedId(customEvent.detail.savedId);
+    };
+
+    window.addEventListener(SAVED_TOOLS_UPDATED_EVENT, handleSavedToolsUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener(SAVED_TOOLS_UPDATED_EVENT, handleSavedToolsUpdated as EventListener);
+    };
+  }, [toolId]);
 
   useEffect(() => {
     const token = window.localStorage.getItem('toolnavix_token');
@@ -96,6 +117,11 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
         if (cachedSavedTools) {
           cachedSavedTools.delete(toolId);
         }
+        window.dispatchEvent(
+          new CustomEvent<SavedToolsUpdatedDetail>(SAVED_TOOLS_UPDATED_EVENT, {
+            detail: { toolId, savedId: null },
+          }),
+        );
         toast.success('Removed from My Tools');
       } else {
         const response = await saveTool(toolId);
@@ -104,6 +130,11 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
         if (response.id && cachedSavedTools) {
           cachedSavedTools.set(toolId, response.id);
         }
+        window.dispatchEvent(
+          new CustomEvent<SavedToolsUpdatedDetail>(SAVED_TOOLS_UPDATED_EVENT, {
+            detail: { toolId, savedId: response.id ?? null },
+          }),
+        );
         toast.success('Saved to My Tools');
       }
     } catch {
@@ -137,9 +168,13 @@ export default function SaveToolButton({ toolId, variant = 'default', initialSav
       type="button"
       onClick={toggleSave}
       disabled={loading}
-      className={`rounded-lg border px-3 py-1 text-xs font-medium ${savedId ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600'}`}
+      className={`rounded-lg border px-4 py-2 text-sm font-medium ${
+        savedId 
+          ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100' 
+          : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600'
+      } transition`}
     >
-      {savedId ? 'Saved' : 'Save Tool'}
+      {savedId ? '✓ Saved to My Tools' : 'Save Tool'}
     </button>
   );
 }

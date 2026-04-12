@@ -78,11 +78,13 @@ export default function ToolFeedPage({ title, subtitle, fetcher }: ToolFeedPageP
                 <article key={tool.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="relative aspect-[16/9] bg-slate-100">
                     <SaveToolButton toolId={tool.id} variant="overlay" />
-                    {tool.logo ? (
-                      <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
-                    )}
+                    <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>
+                      {tool.logo ? (
+                        <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                      )}
+                    </Link>
                   </div>
                   <div className="p-4">
                     <Link href={`/tools/${tool.slug}`} className="line-clamp-2 break-words text-xl font-bold text-slate-900 hover:text-indigo-600">

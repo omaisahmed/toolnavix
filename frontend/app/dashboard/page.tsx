@@ -65,6 +65,11 @@ type Tool = {
   is_top?: boolean;
   visit_url: string;
   logo?: string | null;
+  logo_alt?: string | null;
+  logo_title?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
   features?: string[];
   pros?: string[];
   cons?: string[];
@@ -79,6 +84,8 @@ type Post = {
   tags?: string[];
   excerpt?: string | null;
   image?: string | null;
+  image_alt?: string | null;
+  image_title?: string | null;
   content: string;
   meta_title?: string | null;
   meta_description?: string | null;
@@ -126,6 +133,11 @@ const defaultToolForm = {
   is_top: false,
   logo: '',
   remove_logo: false,
+  logo_alt: '',
+  logo_title: '',
+  meta_title: '',
+  meta_description: '',
+  meta_keywords: '',
   features: '',
   pros: '',
   cons: '',
@@ -140,6 +152,8 @@ const defaultPostForm = {
   excerpt: '',
   image: '',
   remove_image: false,
+  image_alt: '',
+  image_title: '',
   content: '',
   meta_title: '',
   meta_description: '',
@@ -291,6 +305,64 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
                   )}
                 </div>
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">SEO Settings</label>
+                <div className="mt-2 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Logo Alt Text</label>
+                    <input
+                      value={formData.logo_alt || ''}
+                      onChange={(e) => setFormData({ ...formData, logo_alt: e.target.value })}
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                      placeholder="Descriptive alt text for logo"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Alt text for screen readers and SEO</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Logo Title</label>
+                    <input
+                      value={formData.logo_title || ''}
+                      onChange={(e) => setFormData({ ...formData, logo_title: e.target.value })}
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                      placeholder="Tooltip text for logo"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Title attribute for hover tooltip</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-slate-700">Meta Title</label>
+                  <input
+                    value={formData.meta_title || ''}
+                    onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                    placeholder="Custom page title for SEO"
+                    maxLength={60}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">{(formData.meta_title || '').length}/60 characters. Leave empty to use default.</p>
+                </div>
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-slate-700">Meta Description</label>
+                  <textarea
+                    value={formData.meta_description || ''}
+                    onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                    rows={2}
+                    placeholder="Brief description for search results"
+                    maxLength={160}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">{(formData.meta_description || '').length}/160 characters. Leave empty to use default.</p>
+                </div>
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-slate-700">Meta Keywords</label>
+                  <input
+                    value={formData.meta_keywords || ''}
+                    onChange={(e) => setFormData({ ...formData, meta_keywords: e.target.value })}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                    placeholder="keyword1, keyword2, keyword3"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Comma-separated keywords for SEO</p>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">Description Editor</label>
@@ -532,6 +604,31 @@ const FormModal = ({ isOpen, type, mode, data, onClose, onSubmit, formData, setF
                   )}
                 </div>
                 <p className="mt-1 text-xs text-slate-500">Recommended ratio: 16:9, max size 10MB.</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Image SEO</label>
+                <div className="mt-2 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Image Alt Text</label>
+                    <input
+                      value={formData.image_alt || ''}
+                      onChange={(e) => setFormData({ ...formData, image_alt: e.target.value })}
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                      placeholder="Descriptive alt text for image"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Alt text for screen readers and SEO</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Image Title</label>
+                    <input
+                      value={formData.image_title || ''}
+                      onChange={(e) => setFormData({ ...formData, image_title: e.target.value })}
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+                      placeholder="Tooltip text for image"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Title attribute for hover tooltip</p>
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">Content</label>
@@ -1189,6 +1286,11 @@ function DashboardPageContent() {
         is_top: Boolean(item.is_top),
         logo: item.logo ?? '',
         remove_logo: false,
+        logo_alt: item.logo_alt || '',
+        logo_title: item.logo_title || '',
+        meta_title: item.meta_title || '',
+        meta_description: item.meta_description || '',
+        meta_keywords: item.meta_keywords || '',
         features: Array.isArray(item.features) ? item.features.join(', ') : '',
         pros: Array.isArray(item.pros) ? item.pros.join(', ') : '',
         cons: Array.isArray(item.cons) ? item.cons.join(', ') : '',
@@ -1273,6 +1375,11 @@ function DashboardPageContent() {
         payload.append('features', JSON.stringify(parseCsv(formData.features)));
         payload.append('pros', JSON.stringify(parseCsv(formData.pros)));
         payload.append('cons', JSON.stringify(parseCsv(formData.cons)));
+        payload.append('logo_alt', formData.logo_alt || '');
+        payload.append('logo_title', formData.logo_title || '');
+        payload.append('meta_title', formData.meta_title || '');
+        payload.append('meta_description', formData.meta_description || '');
+        payload.append('meta_keywords', formData.meta_keywords || '');
 
         if (toolImageFile) {
           payload.append('logo', toolImageFile);
@@ -1337,6 +1444,8 @@ function DashboardPageContent() {
         payload.append('meta_description', formData.meta_description || '');
         payload.append('published', formData.published ? '1' : '0');
         payload.append('published_at', formData.published_at || '');
+        payload.append('image_alt', formData.image_alt || '');
+        payload.append('image_title', formData.image_title || '');
         if (postImageFile) {
           payload.append('image', postImageFile);
         }
@@ -1380,6 +1489,8 @@ function DashboardPageContent() {
       excerpt: post.excerpt || '',
       image: post.image || '',
       remove_image: false,
+      image_alt: post.image_alt || '',
+      image_title: post.image_title || '',
       content: post.content || '',
       meta_title: post.meta_title || '',
       meta_description: post.meta_description || '',

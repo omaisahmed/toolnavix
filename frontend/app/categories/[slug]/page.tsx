@@ -24,19 +24,27 @@ export default function CategoryToolsPage() {
 
   const [categoryName, setCategoryName] = useState('Category');
   const [tools, setTools] = useState<Tool[]>([]);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [slug]);
 
   useEffect(() => {
     if (!slug) return;
-    fetchCategoryTools(slug)
+    fetchCategoryTools(slug, { page: String(page), per_page: '12' })
       .then((res) => {
         setCategoryName(res.category?.name || 'Category');
         setTools(res.tools?.data ?? []);
+        setLastPage(res.tools?.last_page ?? 1);
       })
       .catch(() => {
         setCategoryName('Category');
         setTools([]);
+        setLastPage(1);
       });
-  }, [slug]);
+  }, [slug, page]);
 
   return (
     <>
@@ -47,13 +55,13 @@ export default function CategoryToolsPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tools.map((tool) => (
               <article key={tool.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="aspect-[16/9] bg-slate-100">
+                <Link href={`/tools/${tool.slug}`} className="block aspect-[16/9] bg-slate-100" aria-label={`Open ${tool.name}`}>
                   {tool.logo ? (
                     <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
                   )}
-                </div>
+                </Link>
                 <div className="p-4">
                   <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-lg font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
                   <p className="mt-2 line-clamp-3 text-sm text-slate-600">{stripHtml(tool.description)}</p>
@@ -65,6 +73,25 @@ export default function CategoryToolsPage() {
             ))}
           </div>
           {tools.length === 0 && <p className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-500">No tools found in this category.</p>}
+          {tools.length > 0 && (
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((prev) => prev - 1)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-600">Page {page} / {lastPage}</span>
+              <button
+                disabled={page >= lastPage}
+                onClick={() => setPage((prev) => prev + 1)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </>

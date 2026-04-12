@@ -148,7 +148,8 @@ class AdminController extends Controller
         $settings = $this->adminService->updateSettings(
             $request->validated(),
             $request->file('logo'),
-            $request->file('favicon')
+            $request->file('favicon'),
+            $request->file('social_image')
         );
 
         return response()->json(['message' => 'Settings updated', 'settings' => $this->adminService->formatSettings($settings)]);

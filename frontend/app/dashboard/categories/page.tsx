@@ -12,6 +12,11 @@ type Category = {
   slug: string;
   description?: string | null;
   icon?: string | null;
+  icon_alt?: string | null;
+  icon_title?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
 };
 
 type Settings = {
@@ -35,7 +40,13 @@ function CategoryFormContent() {
     slug: '',
     description: '',
     icon: '',
+    icon_alt: '',
+    icon_title: '',
+    meta_title: '',
+    meta_description: '',
+    meta_keywords: '',
   });
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -55,6 +66,11 @@ function CategoryFormContent() {
               slug: found.slug,
               description: found.description || '',
               icon: found.icon || '',
+              icon_alt: found.icon_alt || '',
+              icon_title: found.icon_title || '',
+              meta_title: found.meta_title || '',
+              meta_description: found.meta_description || '',
+              meta_keywords: found.meta_keywords || '',
             });
           } else {
             toast.error('Category not found');
@@ -73,6 +89,7 @@ function CategoryFormContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     setSubmitting(true);
     try {
       const payload = {
@@ -97,8 +114,13 @@ function CategoryFormContent() {
         }));
       }
       router.push('/dashboard?tab=Categories');
-    } catch (error) {
-      toast.error(categoryId ? 'Failed to update category' : 'Failed to create category');
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+        toast.error('Please fix the validation errors below.');
+      } else {
+        toast.error(categoryId ? 'Failed to update category' : 'Failed to create category');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -175,9 +197,10 @@ function CategoryFormContent() {
                     placeholder="Category name"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                     required
                   />
+                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name[0]}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Slug</label>
@@ -186,9 +209,10 @@ function CategoryFormContent() {
                     placeholder="Leave empty to auto-generate"
                     value={form.slug}
                     onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.slug ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
                   />
                   {!form.slug && <p className="mt-1 text-xs text-slate-500">If empty, will auto-generate from name</p>}
+                  {errors.slug && <p className="mt-1 text-sm text-red-600">{errors.slug[0]}</p>}
                 </div>
               </div>
 
@@ -206,6 +230,77 @@ function CategoryFormContent() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
+              <h2 className="mb-6 text-xl font-semibold text-slate-900">SEO Settings</h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Icon Alt Text</label>
+                  <input
+                    type="text"
+                    placeholder="Descriptive alt text for icon"
+                    value={form.icon_alt}
+                    onChange={(e) => setForm({ ...form, icon_alt: e.target.value })}
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.icon_alt ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                  />
+                  {errors.icon_alt && <p className="mt-1 text-sm text-red-600">{errors.icon_alt[0]}</p>}
+                  <p className="mt-1 text-xs text-slate-500">Alt text for screen readers and SEO</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Icon Title</label>
+                  <input
+                    type="text"
+                    placeholder="Tooltip text for icon"
+                    value={form.icon_title}
+                    onChange={(e) => setForm({ ...form, icon_title: e.target.value })}
+                    className={`w-full rounded-xl border px-4 py-3 ${errors.icon_title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                  />
+                  {errors.icon_title && <p className="mt-1 text-sm text-red-600">{errors.icon_title[0]}</p>}
+                  <p className="mt-1 text-xs text-slate-500">Title attribute for hover tooltip</p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Meta Title</label>
+                <input
+                  type="text"
+                  placeholder="Custom page title for SEO"
+                  value={form.meta_title}
+                  onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
+                  maxLength={60}
+                  className={`w-full rounded-xl border px-4 py-3 ${errors.meta_title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                />
+                {errors.meta_title && <p className="mt-1 text-sm text-red-600">{errors.meta_title[0]}</p>}
+                <p className="mt-1 text-xs text-slate-500">{form.meta_title.length}/60 characters. Leave empty to use default.</p>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Meta Description</label>
+                <textarea
+                  placeholder="Brief description for search results"
+                  value={form.meta_description}
+                  onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
+                  maxLength={160}
+                  rows={2}
+                  className={`w-full rounded-xl border px-4 py-3 ${errors.meta_description ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                />
+                {errors.meta_description && <p className="mt-1 text-sm text-red-600">{errors.meta_description[0]}</p>}
+                <p className="mt-1 text-xs text-slate-500">{form.meta_description.length}/160 characters. Leave empty to use default.</p>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Meta Keywords</label>
+                <input
+                  type="text"
+                  placeholder="keyword1, keyword2, keyword3"
+                  value={form.meta_keywords}
+                  onChange={(e) => setForm({ ...form, meta_keywords: e.target.value })}
+                  className={`w-full rounded-xl border px-4 py-3 ${errors.meta_keywords ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'}`}
+                />
+                {errors.meta_keywords && <p className="mt-1 text-sm text-red-600">{errors.meta_keywords[0]}</p>}
+                <p className="mt-1 text-xs text-slate-500">Comma-separated keywords for SEO</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <h2 className="mb-6 text-xl font-semibold text-slate-900">Description</h2>
               <RichTextEditor
                 value={form.description || ''}
@@ -213,6 +308,7 @@ function CategoryFormContent() {
                 maxLength={3000}
                 minHeightClassName="min-h-[140px]"
                 placeholder="Write category description..."
+                error={errors.description ? errors.description[0] : undefined}
               />
               <p className="mt-2 text-xs text-slate-500">Use this rich editor for category descriptions.</p>
             </div>

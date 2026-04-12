@@ -18,6 +18,11 @@ class StoreCategoryRequest extends FormRequest
             'slug' => 'nullable|string|max:255|unique:categories,slug',
             'description' => 'nullable|string|max:3000',
             'icon' => 'nullable|string|max:120',
+            'icon_alt' => 'nullable|string|max:255',
+            'icon_title' => 'nullable|string|max:255',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
         ];
     }
 }

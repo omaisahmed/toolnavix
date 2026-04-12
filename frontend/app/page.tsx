@@ -43,11 +43,13 @@ function ToolCard({ tool, badge, savedId }: { tool: HomepageTool; badge: string;
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
         <SaveToolButton toolId={tool.id} variant="overlay" initialSavedId={savedId ?? null} />
-        {tool.logo ? (
-          <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
-        )}
+        <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>
+          {tool.logo ? (
+            <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+          )}
+        </Link>
         {/* <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow">
           {badge}
         </span> */}
@@ -151,6 +153,21 @@ export default function Home() {
     .map((tag) => (tag || '').trim())
     .filter(Boolean);
   const displayHeroTags = heroTags.length > 0 ? heroTags : ['YouTube tools', 'AI editors', 'Script generators'];
+  const categorySlugToId = new Map(categories.map((category) => [category.slug, category.id]));
+  const categoryToolCounts = new Map<number, number>();
+
+  tools.forEach((tool) => {
+    const categorySlug = tool.category?.slug;
+    if (!categorySlug) return;
+    const categoryId = categorySlugToId.get(categorySlug);
+    if (!categoryId) return;
+    categoryToolCounts.set(categoryId, (categoryToolCounts.get(categoryId) ?? 0) + 1);
+  });
+
+  const topCategories = categories
+    .filter((category) => (categoryToolCounts.get(category.id) ?? 0) > 0)
+    .sort((a, b) => (categoryToolCounts.get(b.id) ?? 0) - (categoryToolCounts.get(a.id) ?? 0))
+    .slice(0, 8);
 
   useEffect(() => {
     async function loadHomepageData() {
@@ -266,12 +283,12 @@ export default function Home() {
       )}
 
       <section className="container pb-12">
-        <h2 className="mb-5 text-2xl font-bold text-slate-900">Explore Top AI Categories</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.slice(0, 8).map((category) => (
+          <h2 className="mb-5 text-2xl font-bold text-slate-900">Explore Top AI Categories</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {topCategories.map((category) => (
             <Link
               key={category.slug}
-              href={`/tools?category=${category.slug}`}
+              href={`/browse-all?category=${category.slug}`}
               className="card flex items-center gap-3 text-left font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-600"
             >
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">

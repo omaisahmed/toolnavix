@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { fetchTools } from '../lib/api';
 import Header from '../components/Header';
 import SaveToolButton from '../components/SaveToolButton';
@@ -150,14 +151,16 @@ export default function ComparePage() {
               <article key={`${tool.id}-${index}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="relative aspect-[16/9] bg-slate-100">
                 <SaveToolButton toolId={tool.id} variant="overlay" />
-                {tool.logo ? (
-                  <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
-                )}
+                <Link href={`/tools/${tool.slug}`} className="block h-full w-full" aria-label={`Open ${tool.name}`}>
+                  {tool.logo ? (
+                    <img src={tool.logo} alt={tool.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full animate-pulse bg-gradient-to-br from-slate-200 to-slate-300" />
+                  )}
+                </Link>
               </div>
               <div className="p-4">
-                <h2 className="line-clamp-2 text-xl font-bold text-slate-900">{tool.name}</h2>
+                <Link href={`/tools/${tool.slug}`} className="line-clamp-2 text-xl font-bold text-slate-900 hover:text-indigo-600">{tool.name}</Link>
                 <p className="mt-1 text-sm text-slate-500">{tool.category?.name || 'Uncategorized'}</p>
                 <p className="mt-3 text-sm font-semibold text-indigo-700">{tool.pricing || '-'}</p>
               </div>

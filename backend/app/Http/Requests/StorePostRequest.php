@@ -22,6 +22,8 @@ class StorePostRequest extends FormRequest
             'excerpt' => 'nullable|string|max:1200',
             'image' => 'sometimes|image|max:10240',
             'remove_image' => 'sometimes|boolean',
+            'image_alt' => 'nullable|string|max:255',
+            'image_title' => 'nullable|string|max:255',
             'content' => 'nullable|string',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',

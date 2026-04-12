@@ -10,6 +10,7 @@ type RichTextEditorProps = {
   maxLength?: number;
   minHeightClassName?: string;
   placeholder?: string;
+  error?: string;
 };
 
 export default function RichTextEditor({
@@ -18,6 +19,7 @@ export default function RichTextEditor({
   maxLength,
   minHeightClassName = 'min-h-[180px]',
   placeholder = 'Write description...',
+  error,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [isHtmlInputOpen, setIsHtmlInputOpen] = useState(false);
@@ -158,7 +160,7 @@ export default function RichTextEditor({
   const plainCount = stripHtml(value).length;
 
   return (
-    <div className="rounded-2xl border border-slate-200">
+    <div className={`rounded-2xl border ${error ? 'border-red-300' : 'border-slate-200'}`}>
       <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
         <button type="button" onClick={() => applyCommand('formatBlock', 'P')} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600">P</button>
         <button type="button" onClick={() => applyCommand('formatBlock', 'H1')} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600">H1</button>
@@ -296,6 +298,7 @@ export default function RichTextEditor({
           {plainCount}/{maxLength} characters
         </p>
       )}
+      {error && <p className="border-t border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
     </div>
   );
 }

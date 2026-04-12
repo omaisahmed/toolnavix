@@ -22,7 +22,9 @@ async function authFetch(url: string, options: RequestInit = {}) {
   const response = await fetch(url, { ...options, headers });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.message || 'Request failed');
+    const error = new Error(body.message || 'Request failed') as any;
+    error.response = { data: body };
+    throw error;
   }
   return response.json();
 }

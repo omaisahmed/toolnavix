@@ -65,11 +65,12 @@ class AdminService
         });
     }
 
-    public function updateSettings(array $data, ?UploadedFile $logoFile = null, ?UploadedFile $faviconFile = null): Setting
+    public function updateSettings(array $data, ?UploadedFile $logoFile = null, ?UploadedFile $faviconFile = null, ?UploadedFile $socialImageFile = null): Setting
     {
         $settings = Setting::firstOrNew();
         $logoData = null;
         $faviconData = null;
+        $socialImageData = null;
 
         if (! empty($data['remove_logo'])) {
             if ($settings->logo_public_id) {
@@ -85,6 +86,14 @@ class AdminService
             }
             $data['favicon_url'] = null;
             $data['favicon_public_id'] = null;
+        }
+
+        if (! empty($data['remove_social_image'])) {
+            if ($settings->social_image_public_id) {
+                $this->cloudinaryService->deleteImage($settings->social_image_public_id);
+            }
+            $data['social_image_url'] = null;
+            $data['social_image_public_id'] = null;
         }
 
         if ($logoFile) {
@@ -103,7 +112,15 @@ class AdminService
             }
         }
 
-        return DB::transaction(function () use ($settings, $data, $logoData, $faviconData) {
+        if ($socialImageFile) {
+            $socialImageData = $this->cloudinaryService->uploadImage($socialImageFile, 'settings/social');
+            if ($socialImageData) {
+                $data['social_image_url'] = $socialImageData['secure_url'];
+                $data['social_image_public_id'] = $socialImageData['public_id'];
+            }
+        }
+
+        return DB::transaction(function () use ($settings, $data, $logoData, $faviconData, $socialImageData) {
             // Delete old images from Cloudinary if new ones are uploaded
             if ($logoData && $settings->logo_public_id) {
                 $this->cloudinaryService->deleteImage($settings->logo_public_id);
@@ -113,8 +130,12 @@ class AdminService
                 $this->cloudinaryService->deleteImage($settings->favicon_public_id);
             }
 
+            if ($socialImageData && $settings->social_image_public_id) {
+                $this->cloudinaryService->deleteImage($settings->social_image_public_id);
+            }
+
             foreach ($data as $key => $value) {
-                if (in_array($key, ['logo_url', 'logo_public_id', 'favicon_url', 'favicon_public_id', 'footer_text', 'hero_badge', 'hero_title', 'hero_subtitle', 'hero_search_placeholder', 'hero_search_button_text', 'hero_tag_1', 'hero_tag_2', 'hero_tag_3'], true)) {
+                if (in_array($key, ['logo_url', 'logo_public_id', 'logo_alt', 'logo_title', 'favicon_url', 'favicon_public_id', 'favicon_alt', 'favicon_title', 'social_image_url', 'social_image_public_id', 'site_title', 'default_meta_description', 'footer_text', 'hero_badge', 'hero_title', 'hero_subtitle', 'hero_search_placeholder', 'hero_search_button_text', 'hero_tag_1', 'hero_tag_2', 'hero_tag_3'], true)) {
                     $settings->{$key} = $value ?: null;
                 }
             }
