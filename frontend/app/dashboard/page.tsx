@@ -38,6 +38,7 @@ import {
   fetchSettings,
   updateSettings,
 } from '../lib/api';
+import { handleAdminAccessError } from '../lib/adminAccess';
 
 const tabs = ['Overview', 'Tools', 'Categories', 'Content', 'Users', 'Settings'] as const;
 type Tab = (typeof tabs)[number];
@@ -963,6 +964,10 @@ function DashboardPageContent() {
         // Silently fail for secondary data
       }
     } catch (err) {
+      if (handleAdminAccessError(router, err)) {
+        setLoading(false);
+        return;
+      }
       if (showLoading) {
         setError('Failed to load dashboard. Please login as admin and refresh.');
         setLoading(false);

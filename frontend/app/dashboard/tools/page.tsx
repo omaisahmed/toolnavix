@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
 import ImageUpload from '../../components/ImageUpload';
 import { createTool, updateTool, fetchTools, fetchSettings, fetchCategories } from '../../lib/api';
+import { handleAdminAccessError } from '../../lib/adminAccess';
 
 type Tool = {
   id: number;
@@ -79,11 +80,24 @@ function ToolFormContent() {
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    Promise.all([
-      fetchSettings().then(s => setSettings(s)).catch(() => {}),
-      fetchCategories().then(c => setCategories(c)).catch(() => {})
-    ]);
-  }, []);
+    const loadInitialData = async () => {
+      try {
+        const [settingsData, categoriesData] = await Promise.all([
+          fetchSettings(),
+          fetchCategories(),
+        ]);
+        setSettings(settingsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        if (handleAdminAccessError(router, error)) {
+          return;
+        }
+        toast.error('Failed to load form data');
+      }
+    };
+
+    loadInitialData();
+  }, [router]);
 
   useEffect(() => {
     if (toolId) {
@@ -130,6 +144,9 @@ function ToolFormContent() {
             router.push('/dashboard?tab=Tools');
           }
         } catch (error) {
+          if (handleAdminAccessError(router, error)) {
+            return;
+          }
           console.error('Error loading tool:', error);
           toast.error('Failed to load tool');
           router.push('/dashboard?tab=Tools');
@@ -231,6 +248,9 @@ function ToolFormContent() {
       }
       router.push('/dashboard?tab=Tools');
     } catch (error: any) {
+      if (handleAdminAccessError(router, error)) {
+        return;
+      }
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
         toast.error('Please fix the validation errors below.');

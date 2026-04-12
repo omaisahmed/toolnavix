@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createUser, updateUser, fetchDashboardUsers, fetchSettings } from '../../lib/api';
+import { handleAdminAccessError } from '../../lib/adminAccess';
 
 type User = {
   id: number;
@@ -38,8 +39,19 @@ function UserFormContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchSettings().then(s => setSettings(s)).catch(() => { });
-  }, []);
+    const loadSettings = async () => {
+      try {
+        const settingsData = await fetchSettings();
+        setSettings(settingsData);
+      } catch (error) {
+        if (handleAdminAccessError(router, error)) {
+          return;
+        }
+      }
+    };
+
+    loadSettings();
+  }, [router]);
 
   useEffect(() => {
     if (userId) {
@@ -59,6 +71,9 @@ function UserFormContent() {
             router.push('/dashboard?tab=Users');
           }
         } catch (error) {
+          if (handleAdminAccessError(router, error)) {
+            return;
+          }
           toast.error('Failed to load user');
           router.push('/dashboard?tab=Users');
         } finally {
@@ -95,6 +110,9 @@ function UserFormContent() {
       }
       router.push('/dashboard?tab=Users');
     } catch (error) {
+      if (handleAdminAccessError(router, error)) {
+        return;
+      }
       toast.error(userId ? 'Failed to update user' : 'Failed to create user');
     } finally {
       setSubmitting(false);

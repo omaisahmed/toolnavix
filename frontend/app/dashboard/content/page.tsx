@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
 import ImageUpload from '../../components/ImageUpload';
 import { createPost, updatePost, fetchDashboardPosts, fetchSettings, fetchCategories } from '../../lib/api';
+import { handleAdminAccessError } from '../../lib/adminAccess';
 
 type Post = {
   id: number;
@@ -85,11 +86,24 @@ function ContentFormContent() {
   };
 
   useEffect(() => {
-    Promise.all([
-      fetchSettings().then(s => setSettings(s)).catch(() => {}),
-      fetchCategories().then(c => setCategories(c)).catch(() => {})
-    ]);
-  }, []);
+    const loadInitialData = async () => {
+      try {
+        const [settingsData, categoriesData] = await Promise.all([
+          fetchSettings(),
+          fetchCategories(),
+        ]);
+        setSettings(settingsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        if (handleAdminAccessError(router, error)) {
+          return;
+        }
+        toast.error('Failed to load form data');
+      }
+    };
+
+    loadInitialData();
+  }, [router]);
 
   useEffect(() => {
     if (postId) {
@@ -128,6 +142,9 @@ function ContentFormContent() {
             router.push('/dashboard?tab=Content');
           }
         } catch (error) {
+          if (handleAdminAccessError(router, error)) {
+            return;
+          }
           toast.error('Failed to load post');
           router.push('/dashboard?tab=Content');
         } finally {
@@ -208,6 +225,9 @@ function ContentFormContent() {
       }
       router.push('/dashboard?tab=Content');
     } catch (error: any) {
+      if (handleAdminAccessError(router, error)) {
+        return;
+      }
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
         toast.error('Please fix the validation errors below.');

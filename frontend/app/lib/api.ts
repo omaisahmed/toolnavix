@@ -23,10 +23,26 @@ async function authFetch(url: string, options: RequestInit = {}) {
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     const error = new Error(body.message || 'Request failed') as any;
+    error.status = response.status;
     error.response = { data: body };
+    error.response.status = response.status;
     throw error;
   }
   return response.json();
+}
+
+export function isUnauthorizedError(error: any): boolean {
+  const status = error?.status ?? error?.response?.status;
+  if (status === 401 || status === 403) {
+    return true;
+  }
+
+  const message = String(error?.response?.data?.message || error?.message || '').toLowerCase();
+  return (
+    message.includes('unauthorized') ||
+    message.includes('unauthenticated') ||
+    message.includes('forbidden')
+  );
 }
 
 export async function fetchTools(params: Record<string, string> = {}) {

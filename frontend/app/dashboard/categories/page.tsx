@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../components/RichTextEditor';
 import { createCategory, updateCategory, fetchCategories, fetchSettings } from '../../lib/api';
+import { handleAdminAccessError } from '../../lib/adminAccess';
 
 type Category = {
   id: number;
@@ -50,8 +51,19 @@ function CategoryFormContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchSettings().then(s => setSettings(s)).catch(() => {});
-  }, []);
+    const loadSettings = async () => {
+      try {
+        const settingsData = await fetchSettings();
+        setSettings(settingsData);
+      } catch (error) {
+        if (handleAdminAccessError(router, error)) {
+          return;
+        }
+      }
+    };
+
+    loadSettings();
+  }, [router]);
 
   useEffect(() => {
     if (categoryId) {
@@ -77,6 +89,9 @@ function CategoryFormContent() {
             router.push('/dashboard?tab=Categories');
           }
         } catch (error) {
+          if (handleAdminAccessError(router, error)) {
+            return;
+          }
           toast.error('Failed to load category');
           router.push('/dashboard?tab=Categories');
         } finally {
@@ -115,6 +130,9 @@ function CategoryFormContent() {
       }
       router.push('/dashboard?tab=Categories');
     } catch (error: any) {
+      if (handleAdminAccessError(router, error)) {
+        return;
+      }
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
         toast.error('Please fix the validation errors below.');
