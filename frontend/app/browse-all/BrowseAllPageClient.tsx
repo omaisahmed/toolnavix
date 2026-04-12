@@ -33,6 +33,7 @@ export default function BrowseAllPageClient() {
   const urlCategory = searchParams?.get('category') ?? '';
   const urlPricing = searchParams?.get('pricing') ?? '';
   const urlRating = searchParams?.get('rating') ?? '';
+  const urlFilter = searchParams?.get('filter') ?? '';
 
   const [tools, setTools] = useState<Tool[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -96,6 +97,7 @@ export default function BrowseAllPageClient() {
       category,
       pricing,
       rating,
+      filter: urlFilter,
       search,
       per_page: '12',
     })
@@ -110,7 +112,7 @@ export default function BrowseAllPageClient() {
       });
       
     return () => clearTimeout(loadingTimer);
-  }, [page, category, pricing, rating, search]);
+  }, [page, category, pricing, rating, search, urlFilter]);
 
   return (
     <>

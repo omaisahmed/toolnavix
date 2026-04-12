@@ -47,6 +47,7 @@ function BrowseAllPageComponent() {
   const urlCategory = searchParams?.get('category') ?? '';
   const urlPricing = searchParams?.get('pricing') ?? '';
   const urlRating = searchParams?.get('rating') ?? '';
+  const urlFilter = searchParams?.get('filter') ?? '';
 
   useEffect(() => {
     if (urlSearch && !searchInput) {
@@ -102,6 +103,7 @@ function BrowseAllPageComponent() {
       category,
       pricing,
       rating,
+      filter: urlFilter,
       search,
       per_page: '12',
     })
@@ -116,7 +118,7 @@ function BrowseAllPageComponent() {
       });
       
     return () => clearTimeout(loadingTimer);
-  }, [page, category, pricing, rating, search]);
+  }, [page, category, pricing, rating, search, urlFilter]);
 
   return (
     <>

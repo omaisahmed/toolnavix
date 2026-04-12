@@ -49,6 +49,18 @@ class ToolController extends Controller
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
+        if ($request->filled('filter')) {
+            $filter = $request->string('filter')->toString();
+
+            if ($filter === 'featured') {
+                $query->where('featured', true);
+            } elseif ($filter === 'trending') {
+                $query->where('trending', true);
+            } elseif ($filter === 'just_landed') {
+                $query->where('just_landed', true);
+            }
+        }
+
         if ($request->filled('sort')) {
             if ($request->sort === 'trending') {
                 $query->orderByDesc('trending')->orderByDesc('updated_at');
