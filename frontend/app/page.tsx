@@ -295,8 +295,8 @@ export default function Home() {
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Search Modes</p>
               <div className="mt-4 space-y-2">
-                <Link href="/browse-all?sort=trending" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
-                  <span>Trending Discovery</span>
+                <Link href="/top-ai-tools" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
+                  <span>Top AI Tools</span>
                   <span className="text-xs text-slate-500">{trendingCount} tools</span>
                 </Link>
                 <Link href="/browse-all?pricing=free" className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">
